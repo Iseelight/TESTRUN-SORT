@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Wand2, Share2, Copy, Check, Info } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
+import { Button } from '../ui/button';
+import { Card } from '../ui/card';
 import { useJobs } from '../../contexts/JobContext';
 
 interface CreateJobModalProps {

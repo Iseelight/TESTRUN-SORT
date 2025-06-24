@@ -1,8 +1,8 @@
 import React from 'react';
 import { MapPin, Users, Clock, BarChart3 } from 'lucide-react';
-import { Card } from '../ui/Card';
-import { Badge } from '../ui/Badge';
-import { Button } from '../ui/Button';
+import { Card } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 import { JobPosting } from '../../types';
 
 interface JobPostingCardProps {
