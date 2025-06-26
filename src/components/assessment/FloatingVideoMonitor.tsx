@@ -321,11 +321,11 @@ export function FloatingVideoMonitor({ onSecurityAlert, onFaceDetectionUpdate, i
         
         // Calculate countdown - how many seconds left until violation
         const timeAway = currentTime - awayStartTime;
-        const secondsLeft = Math.max(0, 15 - Math.floor(timeAway / 1000));
+        const secondsLeft = Math.max(0, 30 - Math.floor(timeAway / 1000));
         setCountdownSeconds(secondsLeft);
         
-        // Alert after 15 seconds without face
-        if (timeAway >= 15000) {
+        // Alert after 30 seconds without face
+        if (timeAway >= 30000) {
           const newCount = faceAwayCount + 1;
           setFaceAwayCount(newCount);
           
@@ -333,7 +333,7 @@ export function FloatingVideoMonitor({ onSecurityAlert, onFaceDetectionUpdate, i
           
           generateSecurityAlert(
             'face_not_detected', 
-            `Face not detected for 15 seconds (${newCount}/2) - Please position yourself in the camera view`, 
+            `Face not detected for 30 seconds (${newCount}/2) - Please position yourself in the camera view`, 
             newCount >= 2 ? 'high' : 'medium'
           );
           
@@ -343,7 +343,7 @@ export function FloatingVideoMonitor({ onSecurityAlert, onFaceDetectionUpdate, i
           }
           
           // Reset for next potential violation
-          setAwayStartTime(currentTime); // Reset timer for next 15-second period
+          setAwayStartTime(currentTime); // Reset timer for next 30-second period
         }
       } else {
         // Face is detected - ONLY clear away status when face is actually detected

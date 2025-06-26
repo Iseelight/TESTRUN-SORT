@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect, useRef, useCallback } from "react"
 import {
   Mic,
@@ -21,7 +19,7 @@ import { Textarea } from "../ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Progress } from "../ui/progress"
 import { FloatingVideoMonitor } from './FloatingVideoMonitor';
-import type { FaceDetectionData, SecurityAlert } from '../../types';
+import type { FaceDetectionData, SecurityAlert, AssessmentResult, AssessmentConfig } from '../../types';
 
 interface Message {
   id: string
@@ -31,12 +29,33 @@ interface Message {
   transcribed?: boolean
 }
 
-interface AssessmentConfig {
-  duration: number
-  totalQuestions: number
+interface AssessmentInterfaceProps {
+  config?: AssessmentConfig;
+  onAssessmentComplete: (result: AssessmentResult) => void;
 }
 
-export function AssessmentInterface() {
+export function AssessmentInterface({ 
+  config = {
+    duration: 5,
+    questions: [
+      "Tell me about yourself and why you're interested in this position.",
+      "What are your greatest strengths and how do they relate to this role?",
+      "Describe a challenging project you've worked on and how you overcame obstacles.",
+      "How do you handle working under pressure or tight deadlines?",
+      "Tell me about a time when you had to work with a difficult team member.",
+      "What motivates you in your work, and how do you stay current with industry trends?",
+      "Describe a situation where you had to learn something new quickly.",
+      "How do you prioritize tasks when you have multiple competing deadlines?",
+      "Tell me about a mistake you made and how you handled it.",
+      "What are your career goals for the next five years?",
+    ],
+    enableFaceDetection: true,
+    enableScreenLock: true,
+    enableAudioRecording: true,
+    maxViolations: 2
+  },
+  onAssessmentComplete
+}: AssessmentInterfaceProps) {
   // Audio States
   const [isMuted, setIsMuted] = useState(true) // Start muted
   const [audioLevel, setAudioLevel] = useState(0)
@@ -47,9 +66,10 @@ export function AssessmentInterface() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState("")
   const [isAITyping, setIsAITyping] = useState(false)
-  const [timeRemaining, setTimeRemaining] = useState(5 * 60) // 5 minutes
+  const [timeRemaining, setTimeRemaining] = useState(config.duration * 60) // in seconds
   const [timerStarted, setTimerStarted] = useState(false)
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([])
+  const [assessmentStartTime, setAssessmentStartTime] = useState<Date | null>(null)
 
   // Live Transcription States
   const [isTranscribing, setIsTranscribing] = useState(false)
@@ -85,24 +105,6 @@ export function AssessmentInterface() {
   const isStoppingRecognitionRef = useRef(false)
   const shouldRestartRecognitionRef = useRef(false)
 
-  const config: AssessmentConfig = {
-    duration: 5,
-    totalQuestions: 10,
-  }
-
-  const interviewQuestions = [
-    "Tell me about yourself and why you're interested in this position.",
-    "What are your greatest strengths and how do they relate to this role?",
-    "Describe a challenging project you've worked on and how you overcame obstacles.",
-    "How do you handle working under pressure or tight deadlines?",
-    "Tell me about a time when you had to work with a difficult team member.",
-    "What motivates you in your work, and how do you stay current with industry trends?",
-    "Describe a situation where you had to learn something new quickly.",
-    "How do you prioritize tasks when you have multiple competing deadlines?",
-    "Tell me about a mistake you made and how you handled it.",
-    "What are your career goals for the next five years?",
-  ]
-
   // Handle security alerts from face detection
   const handleSecurityAlert = useCallback((alert: SecurityAlert) => {
     setSecurityAlerts((prev) => [...prev, alert])
@@ -124,14 +126,41 @@ export function AssessmentInterface() {
     if (newCount >= 2) {
       setIsAssessmentTerminated(true)
       setIsAssessmentActive(false)
-      alert("Assessment terminated: You have been away from the camera for more than 30 seconds twice.")
+      
+      // Complete assessment with termination reason
+      const assessmentResult: AssessmentResult = {
+        duration: assessmentStartTime ? Math.floor((Date.now() - assessmentStartTime.getTime()) / 1000) : 0,
+        messagesCount: messages.filter(m => m.sender === "candidate").length,
+        securityAlertsCount: securityAlerts.length + 1, // Add the final violation
+        completedAt: new Date(),
+        messages: messages.map(m => ({
+          id: m.id,
+          sender: m.sender,
+          message: m.content,
+          timestamp: m.timestamp
+        })),
+        securityAlerts: [...securityAlerts, {
+          id: Date.now().toString(),
+          type: "face_not_detected",
+          message: "Assessment terminated: Face not detected for extended period",
+          timestamp: new Date(),
+          severity: "high"
+        }],
+        questionsAnswered: currentQuestion,
+        totalQuestions: config.questions.length,
+        userResponses: messages.filter(m => m.sender === "candidate").map(m => m.content),
+        terminationReason: "Assessment terminated: You have been away from the camera for more than 30 seconds twice."
+      };
+      
+      onAssessmentComplete(assessmentResult);
+      
     } else {
       setShowFaceWarning(true)
       setTimeout(() => {
         setShowFaceWarning(false)
       }, 5000)
     }
-  }, [faceWarningCount])
+  }, [faceWarningCount, messages, currentQuestion, securityAlerts, assessmentStartTime, config.questions.length, onAssessmentComplete])
 
   // Initialize microphone
   useEffect(() => {
@@ -231,7 +260,7 @@ export function AssessmentInterface() {
         }
       } catch (error) {
         // If we get the "already started" error, just log it and set the state correctly
-        if (error.message.includes("already started") || error.name === "InvalidStateError") {
+        if (error.message && (error.message.includes("already started") || error.name === "InvalidStateError")) {
           console.log("Speech recognition already running, setting state correctly")
           setIsTranscribing(true)
           shouldRestartRecognitionRef.current = true
@@ -367,7 +396,28 @@ export function AssessmentInterface() {
             // Timer ended - terminate assessment
             setIsAssessmentTerminated(true)
             setIsAssessmentActive(false)
-            alert("Assessment terminated: Time limit reached.")
+            
+            // Complete assessment with time limit reason
+            const assessmentResult: AssessmentResult = {
+              duration: assessmentStartTime ? Math.floor((Date.now() - assessmentStartTime.getTime()) / 1000) : 0,
+              messagesCount: messages.filter(m => m.sender === "candidate").length,
+              securityAlertsCount: securityAlerts.length,
+              completedAt: new Date(),
+              messages: messages.map(m => ({
+                id: m.id,
+                sender: m.sender,
+                message: m.content,
+                timestamp: m.timestamp
+              })),
+              securityAlerts: securityAlerts,
+              questionsAnswered: currentQuestion,
+              totalQuestions: config.questions.length,
+              userResponses: messages.filter(m => m.sender === "candidate").map(m => m.content),
+              terminationReason: "Assessment terminated: Time limit reached."
+            };
+            
+            onAssessmentComplete(assessmentResult);
+            
             return 0
           }
           return prev - 1
@@ -375,7 +425,7 @@ export function AssessmentInterface() {
       }, 1000)
       return () => clearInterval(timer)
     }
-  }, [isAssessmentActive, timerStarted, timeRemaining, isAssessmentTerminated])
+  }, [isAssessmentActive, timerStarted, timeRemaining, isAssessmentTerminated, assessmentStartTime, messages, securityAlerts, currentQuestion, config.questions.length, onAssessmentComplete])
 
   // Enhanced auto-scroll with manual override detection
   useEffect(() => {
@@ -428,6 +478,11 @@ export function AssessmentInterface() {
             })
           }
         }
+        
+        // Auto-start speech recognition when AI finishes speaking
+        if (speechRecognitionSupported && !isTranscribing) {
+          startSpeechRecognition()
+        }
       }
 
       utterance.onerror = () => {
@@ -452,6 +507,17 @@ export function AssessmentInterface() {
         track.enabled = isMuted
       })
     }
+    
+    // Start or stop speech recognition based on mute state
+    if (isMuted) {
+      // If unmuting, start speech recognition
+      if (speechRecognitionSupported && canUserRespond && !isAIReading) {
+        startSpeechRecognition()
+      }
+    } else {
+      // If muting, stop speech recognition
+      stopSpeechRecognition()
+    }
   }
 
   const toggleTranscription = () => {
@@ -471,17 +537,18 @@ export function AssessmentInterface() {
     setFaceWarningCount(0)
     setIsAssessmentTerminated(false)
     setTimerStarted(false) // Timer will start after first question
+    setAssessmentStartTime(new Date())
 
     const welcomeMessage: Message = {
       id: "1",
       sender: "ai",
-      content: `Welcome to your AI interview assessment. I'm your AI interviewer today. We have ${config.duration} minutes for ${config.totalQuestions} questions. 
+      content: `Welcome to your AI interview assessment. I'm your AI interviewer today. We have ${config.duration} minutes for ${config.questions.length} questions. 
 
 Please ensure your camera and microphone are working properly. Keep your face aligned with the silhouette guide. You can respond using voice (which will be transcribed automatically) or by typing your responses.
 
 I will read each question aloud. Please wait for me to finish before responding. The timer will start after I finish reading the first question.
 
-Let's begin with our first question: ${interviewQuestions[0]}`,
+Let's begin with our first question: ${config.questions[0]}`,
       timestamp: new Date(),
     }
     setMessages([welcomeMessage])
@@ -532,12 +599,34 @@ Let's begin with our first question: ${interviewQuestions[0]}`,
       const nextQuestion = currentQuestion + 1
       let aiResponse = ""
 
-      if (nextQuestion < interviewQuestions.length) {
-        aiResponse = `Thank you for that response. Let's move on to question ${nextQuestion + 1}: ${interviewQuestions[nextQuestion]}`
+      if (nextQuestion < config.questions.length) {
+        aiResponse = `Thank you for that response. Let's move on to question ${nextQuestion + 1}: ${config.questions[nextQuestion]}`
         setCurrentQuestion(nextQuestion)
       } else {
         aiResponse =
           "Thank you for completing all the questions. Your assessment is now complete. We'll review your responses and get back to you soon."
+          
+        // Complete assessment successfully
+        setTimeout(() => {
+          const assessmentResult: AssessmentResult = {
+            duration: assessmentStartTime ? Math.floor((Date.now() - assessmentStartTime.getTime()) / 1000) : 0,
+            messagesCount: messages.length + 2, // Include current exchange
+            securityAlertsCount: securityAlerts.length,
+            completedAt: new Date(),
+            messages: [...messages, userMessage, {
+              id: (Date.now() + 1).toString(),
+              sender: "ai",
+              message: aiResponse,
+              timestamp: new Date()
+            }],
+            securityAlerts: securityAlerts,
+            questionsAnswered: config.questions.length,
+            totalQuestions: config.questions.length,
+            userResponses: [...messages.filter(m => m.sender === "candidate").map(m => m.content), currentInput],
+          };
+          
+          onAssessmentComplete(assessmentResult);
+        }, 3000);
       }
 
       const aiMessage: Message = {
@@ -568,7 +657,7 @@ Let's begin with our first question: ${interviewQuestions[0]}`,
   }
 
   const getProgressPercentage = () => {
-    return ((currentQuestion + 1) / config.totalQuestions) * 100
+    return ((currentQuestion + 1) / config.questions.length) * 100
   }
 
   return (
@@ -653,7 +742,7 @@ Let's begin with our first question: ${interviewQuestions[0]}`,
             {isAssessmentActive && (
               <>
                 <Badge variant="outline" className="text-blue-600 border-blue-200">
-                  Question {currentQuestion + 1}/{config.totalQuestions}
+                  Question {currentQuestion + 1}/{config.questions.length}
                 </Badge>
                 {timerStarted && (
                   <Badge variant="outline" className="text-green-600 border-green-200">
@@ -700,7 +789,7 @@ Let's begin with our first question: ${interviewQuestions[0]}`,
                   </p>
                   <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
                     <p>• Duration: {config.duration} minutes</p>
-                    <p>• Questions: {config.totalQuestions}</p>
+                    <p>• Questions: {config.questions.length}</p>
                     <p>• AI will read questions aloud through your speakers</p>
                     <p>• You can respond by voice or text</p>
                     <p>• Face detection: 30 seconds away = 1 warning</p>
@@ -820,7 +909,7 @@ Let's begin with our first question: ${interviewQuestions[0]}`,
               {liveTranscript && (
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-blue-200 dark:border-blue-600">
                   <div className="flex items-start space-x-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse mt-2 flex-shrink-0" />
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Speaking now:</p>
                       <p className="text-gray-800 dark:text-gray-200 italic text-sm leading-relaxed">

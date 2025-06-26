@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '../../lib/utils';
 
 interface ProgressBarProps {
   value: number;
@@ -26,17 +27,17 @@ export function ProgressBar({
   };
 
   return (
-    <div className={`w-full ${className}`}>
+    <div className={cn("w-full", className)}>
       <div className="flex justify-between items-center mb-1">
         {showLabel && (
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {Math.round(percentage)}%
           </span>
         )}
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
         <div
-          className={`h-2 rounded-full transition-all duration-300 ${colorClasses[color]}`}
+          className={cn("h-2 rounded-full transition-all duration-300", colorClasses[color])}
           style={{ width: `${percentage}%` }}
         />
       </div>

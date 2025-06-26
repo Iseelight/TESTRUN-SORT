@@ -346,7 +346,6 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
         <div className="mb-6">
           <Button
             variant="ghost"
-            icon={ArrowLeft}
             onClick={step === 'jobs' ? onBack : () => {
               if (step === 'application') setStep('jobs');
               if (step === 'cv-analysis') setStep('application');
@@ -355,6 +354,7 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
             className="mb-4"
             disabled={step === 'assessment'} // Prevent going back during assessment
           >
+            <ArrowLeft className="mr-2 h-4 w-4" />
             {step === 'jobs' ? 'Back to Home' : step === 'assessment' ? 'Assessment Active' : 'Back'}
           </Button>
 
@@ -486,8 +486,8 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
                       <Button
                         onClick={() => handleJobSelect(job)}
                         className="w-full"
-                        icon={Briefcase}
                       >
+                        <Briefcase className="mr-2 h-4 w-4" />
                         Apply Now
                       </Button>
                     </div>
