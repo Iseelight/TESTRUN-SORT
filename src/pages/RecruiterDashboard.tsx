@@ -6,9 +6,9 @@ import { FilterPanel } from '../components/recruiter/FilterPanel';
 import { JobPostingCard } from '../components/recruiter/JobPostingCard';
 import { CreateJobModal } from '../components/recruiter/CreateJobModal';
 import { LoginModal } from '../components/auth/LoginModal';
-import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
 import { useAuth } from '../contexts/AuthContext';
 import { useJobs } from '../contexts/JobContext';
 
@@ -64,10 +64,10 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           <Button
             variant="ghost"
-            icon={ArrowLeft}
             onClick={onBack}
             className="mb-4"
           >
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Button>
           <Card>
@@ -100,10 +100,10 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           <Button
             variant="ghost"
-            icon={ArrowLeft}
             onClick={onBack}
             className="mb-4"
           >
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Button>
           <Card>
@@ -215,10 +215,10 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
           <div className="mb-4 sm:mb-0">
             <Button
               variant="ghost"
-              icon={ArrowLeft}
               onClick={onBack}
               className="mb-4"
             >
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home
             </Button>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Recruiter Dashboard</h1>
@@ -304,7 +304,8 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
                     Create your first job posting to start receiving applications.
                   </p>
-                  <Button onClick={() => setShowCreateJobModal(true)} icon={Plus}>
+                  <Button onClick={() => setShowCreateJobModal(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
                     Create Your First Job
                   </Button>
                 </div>
@@ -393,7 +394,10 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-0">Your Job Postings</h2>
-              <Button icon={Plus} onClick={() => setShowCreateJobModal(true)}>Create New Job</Button>
+              <Button onClick={() => setShowCreateJobModal(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create New Job
+              </Button>
             </div>
 
             {jobs.length === 0 ? (
@@ -404,7 +408,8 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
                     Create your first job posting to start receiving applications.
                   </p>
-                  <Button onClick={() => setShowCreateJobModal(true)} icon={Plus}>
+                  <Button onClick={() => setShowCreateJobModal(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
                     Create Your First Job
                   </Button>
                 </div>
@@ -510,8 +515,8 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                               size="sm"
                               onClick={() => handleSelectCandidate(candidate.id)}
                               className="px-3 py-1"
-                              icon={CheckCircle}
                             >
+                              <CheckCircle className="mr-2 h-4 w-4" />
                               Select
                             </Button>
                             <Button
@@ -519,8 +524,8 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                               size="sm"
                               onClick={() => handleRejectCandidate(candidate.id)}
                               className="px-3 py-1"
-                              icon={XCircle}
                             >
+                              <XCircle className="mr-2 h-4 w-4" />
                               Reject
                             </Button>
                           </div>

@@ -7,9 +7,9 @@ import { AssessmentInterface } from '../components/assessment/AssessmentInterfac
 import { ResultsPage } from '../components/candidate/ResultsPage';
 import { SessionTerminatedModal } from '../components/candidate/SessionTerminatedModal';
 import { LoginModal } from '../components/auth/LoginModal';
-import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
 import { ConversationMessage, AssessmentConfig, AssessmentResult } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { MockBackendService } from '../components/candidate/MockBackendService';
@@ -204,7 +204,7 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
     try {
       // Generate realistic scores based on assessment performance
       const job = selectedJob;
-      const baseScore = 70 + Math.random() * 25; // 70-95% range for good performance
+      const baseScore = 70 + Math.random() * 25; // 70-95% range
       
       // Factor in assessment performance
       const completionBonus = (assessmentResult.questionsAnswered / assessmentResult.totalQuestions) * 10;
@@ -314,10 +314,10 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           <Button
             variant="ghost"
-            icon={ArrowLeft}
             onClick={onBack}
             className="mb-4"
           >
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Button>
           <Card>
