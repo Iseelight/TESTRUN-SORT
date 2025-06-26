@@ -1,8 +1,8 @@
 import React from 'react';
 import { MapPin, Clock, FileText, MessageCircle } from 'lucide-react';
-import { Card } from '../ui/Card';
-import { Badge } from '../ui/Badge';
-import { Button } from '../ui/Button';
+import { Card } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Candidate } from '../../types';
 

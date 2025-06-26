@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Brain, Settings, LogOut, Moon, Sun, User, ChevronDown } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
