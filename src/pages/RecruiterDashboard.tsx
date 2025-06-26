@@ -8,7 +8,7 @@ import { CreateJobModal } from '../components/recruiter/CreateJobModal';
 import { LoginModal } from '../components/auth/LoginModal';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { Badge } from '../components/ui/Badge';
+import { Badge } from '../components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import { useJobs } from '../contexts/JobContext';
 
