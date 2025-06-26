@@ -1,26 +1,27 @@
 import React from 'react';
-import { cn } from '../../lib/utils';
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
   hover?: boolean;
+  padding?: 'sm' | 'md' | 'lg';
 }
 
-export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, hover, children, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          'bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-6',
-          hover && 'transition-shadow hover:shadow-md',
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  }
-);
+export function Card({ children, className = '', hover = false, padding = 'md' }: CardProps) {
+  const paddingClasses = {
+    sm: 'p-4',
+    md: 'p-6',
+    lg: 'p-8'
+  };
 
-Card.displayName = 'Card';
+  return (
+    <div className={`
+      bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700
+      ${hover ? 'hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 cursor-pointer' : ''}
+      ${paddingClasses[padding]}
+      ${className}
+    `}>
+      {children}
+    </div>
+  );
+}
