@@ -7,8 +7,8 @@ import { AssessmentInterface } from '../components/assessment/AssessmentInterfac
 import { ResultsPage } from '../components/candidate/ResultsPage';
 import { SessionTerminatedModal } from '../components/candidate/SessionTerminatedModal';
 import { LoginModal } from '../components/auth/LoginModal';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/button';
+import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/Badge';
 import { ConversationMessage, AssessmentConfig, AssessmentResult } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -225,6 +225,7 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
          softScore * job.skill_weights.soft +
          leadershipScore * job.skill_weights.leadership +
          communicationScore * job.skill_weights.communication) / 100
+      
       );
       
       // Determine initial status based on score and job settings

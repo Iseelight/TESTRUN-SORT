@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, FileText, User, Mail, Phone, MapPin } from 'lucide-react';
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Card } from '../ui/card';
+import { Button } from '../ui/button';
 
 interface ApplicationFormProps {
   jobTitle: string;

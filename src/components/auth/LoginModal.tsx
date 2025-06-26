@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, Eye, EyeOff, User, Building, Phone, MapPin, FileText } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
+import { Button } from '../ui/button';
+import { Card } from '../ui/card';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface LoginModalProps {
