@@ -164,9 +164,10 @@ export function ChatInterface({ messages, onSendMessage, isTyping = false }: Cha
           <Button 
             onClick={handleSend}
             disabled={!inputMessage.trim() || isTyping}
-            icon={Send}
             className="px-4"
-          />
+          >
+            <Send className="h-4 w-4" />
+          </Button>
         </div>
 
         <div className="flex justify-center">

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Play, Pause, Square, Trash2 } from 'lucide-react';
+import { Mic, MicOff, Play, Pause, Trash2 } from 'lucide-react';
 import { Button } from '../ui/button';
 
 interface VoiceRecorderProps {
@@ -14,10 +14,15 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
   const [isPlaying, setIsPlaying] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
@@ -27,12 +32,56 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(console.error);
+      }
     };
   }, [audioUrl]);
 
+  const monitorAudioLevel = () => {
+    if (!analyserRef.current) return;
+    
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getByteFrequencyData(dataArray);
+    
+    const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+    const normalizedLevel = Math.min(average / 128, 1);
+    
+    setAudioLevel(normalizedLevel);
+    
+    if (isRecording) {
+      animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
+    }
+  };
+
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
+      
+      streamRef.current = stream;
+      
+      // Set up audio monitoring
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      source.connect(analyserRef.current);
+      
+      // Start audio level monitoring
+      monitorAudioLevel();
+
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
 
@@ -51,6 +100,12 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
         
         // Stop all tracks to release microphone
         stream.getTracks().forEach(track => track.stop());
+        
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        
+        setAudioLevel(0);
       };
 
       mediaRecorder.start();
@@ -76,6 +131,14 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
+      }
+      
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(console.error);
       }
     }
   };
@@ -144,6 +207,16 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
         )}
       </div>
 
+      {/* Audio Level Meter */}
+      {isRecording && (
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
+          <div 
+            className="bg-red-500 h-2 rounded-full transition-all duration-100"
+            style={{ width: `${audioLevel * 100}%` }}
+          />
+        </div>
+      )}
+
       <div className="flex items-center gap-2">
         {!isRecording && !audioBlob && (
           <Button
@@ -151,8 +224,8 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
             disabled={isDisabled}
             variant="outline"
             size="sm"
-            icon={Mic}
           >
+            <Mic className="mr-2 h-4 w-4" />
             Start Recording
           </Button>
         )}
@@ -160,10 +233,10 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
         {isRecording && (
           <Button
             onClick={stopRecording}
-            variant="danger"
+            variant="destructive"
             size="sm"
-            icon={MicOff}
           >
+            <MicOff className="mr-2 h-4 w-4" />
             Stop Recording
           </Button>
         )}
@@ -174,8 +247,8 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
               onClick={playAudio}
               variant="outline"
               size="sm"
-              icon={isPlaying ? Pause : Play}
             >
+              {isPlaying ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
               {isPlaying ? 'Pause' : 'Play'}
             </Button>
             
@@ -192,8 +265,8 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
               onClick={deleteRecording}
               variant="outline"
               size="sm"
-              icon={Trash2}
             >
+              <Trash2 className="mr-2 h-4 w-4" />
               Delete
             </Button>
           </>
