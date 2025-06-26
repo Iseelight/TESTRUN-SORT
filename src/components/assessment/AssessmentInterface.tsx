@@ -749,7 +749,7 @@ Let's begin with our first question: ${config.questions[0]}`,
                     {formatTime(timeRemaining)}
                   </Badge>
                 )}
-                {faceWarningCount > 0 && <Badge variant="destructive">Warnings: {faceWarningCount}/2</Badge>}
+                {faceWarningCount > 0 && <Badge variant="error">Warnings: {faceWarningCount}/2</Badge>}
               </>
             )}
             <Button variant="ghost" size="sm">
@@ -959,7 +959,7 @@ Let's begin with our first question: ${config.questions[0]}`,
               <div className="flex space-x-2">
                 <Button
                   size="sm"
-                  variant={isMuted ? "destructive" : "secondary"}
+                  variant={isMuted ? "danger" : "secondary"}
                   onClick={toggleMute}
                   className="rounded-full w-10 h-10 p-0"
                   disabled={isAIReading}
@@ -970,7 +970,7 @@ Let's begin with our first question: ${config.questions[0]}`,
 
                 <Button
                   size="sm"
-                  variant={isTranscribing ? "default" : "outline"}
+                  variant={isTranscribing ? "primary" : "outline"}
                   onClick={toggleTranscription}
                   className={`rounded-full w-10 h-10 p-0 transition-all duration-200 ${
                     isTranscribing

@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'rea
 import { RecruiterDashboard } from './pages/RecruiterDashboard';
 import { EnhancedCandidateApplication } from './pages/EnhancedCandidateApplication';
 import { LoginModal } from './components/auth/LoginModal';
-import { Button } from './components/ui/button';
+import { Button } from './components/ui/Button';
 import { Header } from './components/layout/Header';
 import { Brain, Users, Briefcase, Camera, Shield, Eye } from 'lucide-react';
 import { AuthProvider } from './contexts/AuthContext';
@@ -59,10 +59,12 @@ function HomePage() {
             Move beyond keyword-based ATS systems. Our AI conducts intelligent conversations with candidates to discover true talent, with advanced proctoring to ensure interview integrity.
           </p>
           <div className="flex justify-center gap-4 mb-12">
-            <Button size="lg" onClick={() => setMode('recruiter')} icon={Users}>
+            <Button size="lg" onClick={() => setMode('recruiter')}>
+              <Users className="mr-2 h-5 w-5" />
               I'm a Recruiter
             </Button>
-            <Button size="lg" variant="outline" onClick={() => setMode('candidate')} icon={Briefcase}>
+            <Button size="lg" variant="outline" onClick={() => setMode('candidate')}>
+              <Briefcase className="mr-2 h-5 w-5" />
               I'm Looking for Jobs
             </Button>
           </div>
@@ -159,17 +161,17 @@ function HomePage() {
               size="lg" 
               variant="secondary"
               onClick={() => setMode('recruiter')}
-              icon={Users}
             >
+              <Users className="mr-2 h-5 w-5" />
               Start as Recruiter
             </Button>
             <Button 
               size="lg" 
               variant="outline"
               onClick={() => setMode('candidate')}
-              icon={Briefcase}
               className="border-white text-white hover:bg-white hover:text-blue-600"
             >
+              <Briefcase className="mr-2 h-5 w-5" />
               Apply for Jobs
             </Button>
           </div>

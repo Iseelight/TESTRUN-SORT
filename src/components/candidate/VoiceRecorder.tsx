@@ -233,7 +233,7 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
         {isRecording && (
           <Button
             onClick={stopRecording}
-            variant="destructive"
+            variant="danger"
             size="sm"
           >
             <MicOff className="mr-2 h-4 w-4" />

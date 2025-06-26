@@ -1,11 +1,10 @@
 import React from 'react';
-import { DivideIcon as LucideIcon } from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
-  icon?: LucideIcon;
-  iconPosition?: 'left' | 'right';
   loading?: boolean;
   children: React.ReactNode;
 }
@@ -13,8 +12,6 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export function Button({
   variant = 'primary',
   size = 'md',
-  icon: Icon,
-  iconPosition = 'left',
   loading = false,
   children,
   className = '',
@@ -39,18 +36,14 @@ export function Button({
 
   return (
     <button
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={cn(baseClasses, variantClasses[variant], sizeClasses[size], className)}
       disabled={disabled || loading}
       {...props}
     >
       {loading ? (
         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
       ) : (
-        <>
-          {Icon && iconPosition === 'left' && <Icon size={size === 'lg' ? 18 : 16} />}
-          <span className="whitespace-nowrap">{children}</span>
-          {Icon && iconPosition === 'right' && <Icon size={size === 'lg' ? 18 : 16} />}
-        </>
+        children
       )}
     </button>
   );
