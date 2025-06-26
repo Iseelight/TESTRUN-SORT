@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle, XCircle, Clock, Award, MessageCircle, Download, Eye, Calendar } from 'lucide-react';
 import { Card } from '../ui/card';
-import { Badge } from '../ui/Badge';
+import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Candidate } from '../../types';
