@@ -219,8 +219,8 @@ export function ResultsPage({
               variant="outline"
               size="sm"
               onClick={() => setShowDetailedFeedback(!showDetailedFeedback)}
-              icon={Eye}
             >
+              <Eye className="mr-2 h-4 w-4" />
               {showDetailedFeedback ? 'Hide Details' : 'Show Details'}
             </Button>
           </div>
@@ -297,14 +297,17 @@ export function ResultsPage({
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Next Steps</h3>
         
         <div className="flex flex-wrap gap-3">
-          <Button onClick={onDownloadReport} icon={Download}>
+          <Button onClick={onDownloadReport}>
+            <Download className="mr-2 h-4 w-4" />
             Download Report
           </Button>
-          <Button variant="outline" onClick={onViewFeedback} icon={MessageCircle}>
+          <Button variant="outline" onClick={onViewFeedback}>
+            <MessageCircle className="mr-2 h-4 w-4" />
             View Detailed Feedback
           </Button>
           {candidate.feedback && (
-            <Button variant="outline" icon={Award}>
+            <Button variant="outline">
+              <Award className="mr-2 h-4 w-4" />
               Share Results
             </Button>
           )}
