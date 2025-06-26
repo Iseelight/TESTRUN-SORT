@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Mic, MicOff, Volume2, VolumeX, Loader } from 'lucide-react';
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Card } from '../ui/card';
+import { Button } from '../ui/button';
 import { ConversationMessage, FaceDetectionData } from '../../types';
 
 interface EnhancedChatInterfaceProps {

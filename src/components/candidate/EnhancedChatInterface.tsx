@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Camera, Mic, MicOff, AlertTriangle } from 'lucide-react';
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Card } from '../ui/card';
+import { Button } from '../ui/button';
 import { VoiceRecorder } from './VoiceRecorder';
 import { EnhancedProctoringInterface } from './EnhancedProctoringInterface';
 import { ConversationMessage } from '../../types';

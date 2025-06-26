@@ -6,9 +6,9 @@ import { FilterPanel } from '../components/recruiter/FilterPanel';
 import { JobPostingCard } from '../components/recruiter/JobPostingCard';
 import { CreateJobModal } from '../components/recruiter/CreateJobModal';
 import { LoginModal } from '../components/auth/LoginModal';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/button';
+import { Card } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import { useJobs } from '../contexts/JobContext';
 

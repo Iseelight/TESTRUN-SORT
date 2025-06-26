@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search, Filter, MapPin, BarChart3 } from 'lucide-react';
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Card } from '../ui/card';
+import { Button } from '../ui/button';
 
 interface FilterPanelProps {
   searchTerm: string;
