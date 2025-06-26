@@ -13,7 +13,7 @@ import {
   CheckCircle,
 } from "lucide-react"
 import { Button } from '../ui/button';
-import { Card } from '../ui/card';
+import { Card } from '../ui/card.tsx';
 import { Badge } from "../ui/badge"
 import { Textarea } from "../ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"

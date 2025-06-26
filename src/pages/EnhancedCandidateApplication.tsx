@@ -8,7 +8,7 @@ import { ResultsPage } from '../components/candidate/ResultsPage';
 import { SessionTerminatedModal } from '../components/candidate/SessionTerminatedModal';
 import { LoginModal } from '../components/auth/LoginModal';
 import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/card.tsx';
 import { Badge } from '../components/ui/Badge';
 import { ConversationMessage, AssessmentConfig, AssessmentResult } from '../types';
 import { useAuth } from '../contexts/AuthContext';
