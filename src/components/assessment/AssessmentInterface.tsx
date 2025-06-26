@@ -13,7 +13,7 @@ import {
   CheckCircle,
 } from "lucide-react"
 import { Button } from '../ui/button';
-import { Card } from '../ui/card.tsx';
+import { Card } from '../ui/card';
 import { Badge } from "../ui/badge"
 import { Textarea } from "../ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
@@ -959,7 +959,7 @@ Let's begin with our first question: ${config.questions[0]}`,
               <div className="flex space-x-2">
                 <Button
                   size="sm"
-                  variant={isMuted ? "danger" : "secondary"}
+                  variant={isMuted ? "destructive" : "secondary"}
                   onClick={toggleMute}
                   className="rounded-full w-10 h-10 p-0"
                   disabled={isAIReading}
@@ -970,7 +970,7 @@ Let's begin with our first question: ${config.questions[0]}`,
 
                 <Button
                   size="sm"
-                  variant={isTranscribing ? "primary" : "outline"}
+                  variant={isTranscribing ? "default" : "outline"}
                   onClick={toggleTranscription}
                   className={`rounded-full w-10 h-10 p-0 transition-all duration-200 ${
                     isTranscribing

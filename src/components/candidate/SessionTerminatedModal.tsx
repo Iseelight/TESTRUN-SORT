@@ -1,8 +1,8 @@
 import React from 'react';
 import { AlertTriangle, Camera, Eye, Monitor, Clock } from 'lucide-react';
-import { Card } from '../ui/card.tsx';
+import { Card } from '../ui/card';
 import { Button } from '../ui/button';
-import { Badge } from '../ui/Badge';
+import { Badge } from '../ui/badge';
 
 interface SessionTerminatedModalProps {
   isOpen: boolean;
