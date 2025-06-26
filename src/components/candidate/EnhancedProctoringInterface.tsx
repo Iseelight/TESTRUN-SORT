@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Camera, CameraOff, AlertTriangle, Shield, Eye, EyeOff, Mic, MicOff } from 'lucide-react';
-import { Card } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
+import { Badge } from '../ui/Badge';
 
 interface EnhancedProctoringInterfaceProps {
   isActive: boolean;
@@ -25,7 +25,7 @@ export function EnhancedProctoringInterface({
 }: EnhancedProctoringInterfaceProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [violations, setViolations] = useState<Violation[]>([]);
-  const [lookAwayCount, setLookAwayCount] = useState(0);
+  const [warningCount, setWarningCount] = useState(0);
   const [faceDetected, setFaceDetected] = useState(false);
   const [isLookingAway, setIsLookingAway] = useState(false);
   const [screenLocked, setScreenLocked] = useState(false);
@@ -205,8 +205,8 @@ export function EnhancedProctoringInterface({
 
   // Handle look away violations with counting
   const handleLookAwayViolation = useCallback(() => {
-    const newCount = lookAwayCount + 1;
-    setLookAwayCount(newCount);
+    const newCount = warningCount + 1;
+    setWarningCount(newCount);
     
     const violation: Violation = {
       type: 'looking_away',
@@ -229,7 +229,7 @@ export function EnhancedProctoringInterface({
         endSession('Session terminated: Looked away from camera twice');
       }, 1000);
     }
-  }, [lookAwayCount, onViolation]);
+  }, [warningCount, onViolation]);
 
   // Audio level monitoring
   const monitorAudioLevel = useCallback(() => {
@@ -362,7 +362,7 @@ export function EnhancedProctoringInterface({
     setPermissionsGranted(false);
     setAudioLevel(0);
     setVideoQuality('disconnected');
-    setLookAwayCount(0);
+    setWarningCount(0);
     setConsecutiveLookAwayTime(0);
     setSessionStartTime(null);
   }, [isRecording]);
@@ -524,7 +524,7 @@ export function EnhancedProctoringInterface({
             
             <div className="flex items-center gap-4">
               <div className="text-sm">
-                Look Away Violations: {lookAwayCount}/2
+                Look Away Violations: {warningCount}/2
               </div>
               
               {sessionStartTime && (
@@ -544,7 +544,7 @@ export function EnhancedProctoringInterface({
       )}
 
       {/* Warning Modal for Looking Away */}
-      {isLookingAway && lookAwayCount < 2 && permissionsGranted && (
+      {isLookingAway && warningCount < 2 && permissionsGranted && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
           <Card className="max-w-md mx-4">
             <div className="text-center">
@@ -554,7 +554,7 @@ export function EnhancedProctoringInterface({
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Please look directly at the camera and stay focused on the screen. 
-                You have {2 - lookAwayCount} violation(s) remaining.
+                You have {2 - warningCount} violation(s) remaining.
               </p>
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
                 <p className="text-sm text-red-600 dark:text-red-400">
@@ -613,7 +613,7 @@ export function EnhancedProctoringInterface({
             {/* Look away counter */}
             <div className="absolute top-2 right-2">
               <div className="bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-                {lookAwayCount}/2
+                {warningCount}/2
               </div>
             </div>
             

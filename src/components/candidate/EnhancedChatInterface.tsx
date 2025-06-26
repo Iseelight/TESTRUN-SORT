@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Camera, Mic, MicOff, AlertTriangle } from 'lucide-react';
-import { Card } from '../ui/card';
-import { Button } from '../ui/button';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
 import { VoiceRecorder } from './VoiceRecorder';
 import { EnhancedProctoringInterface } from './EnhancedProctoringInterface';
 import { ConversationMessage } from '../../types';
@@ -201,8 +201,8 @@ export function EnhancedChatInterface({
             <Button 
               onClick={startProctoredSession}
               className="w-full mt-6"
-              icon={Camera}
             >
+              <Camera className="mr-2 h-4 w-4" />
               Start Proctored Session
             </Button>
           </div>
@@ -240,9 +240,9 @@ export function EnhancedChatInterface({
             variant="ghost"
             size="sm"
             onClick={toggleAudio}
-            icon={isAudioEnabled ? Mic : MicOff}
             className={isAudioEnabled ? 'text-green-600' : 'text-gray-400'}
           >
+            {isAudioEnabled ? <Mic className="mr-2 h-4 w-4" /> : <MicOff className="mr-2 h-4 w-4" />}
             {isAudioEnabled ? 'Audio On' : 'Audio Off'}
           </Button>
           
@@ -350,9 +350,10 @@ export function EnhancedChatInterface({
           <Button 
             onClick={handleSend}
             disabled={!inputMessage.trim() || isTyping}
-            icon={Send}
             className="px-4"
-          />
+          >
+            <Send className="h-4 w-4" />
+          </Button>
         </div>
 
         <div className="flex justify-center">
@@ -361,8 +362,8 @@ export function EnhancedChatInterface({
             size="sm"
             onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
             disabled={isTyping}
-            icon={showVoiceRecorder ? MicOff : Mic}
           >
+            {showVoiceRecorder ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
             {showVoiceRecorder ? 'Hide Voice Recorder' : 'Use Voice Recording'}
           </Button>
         </div>
