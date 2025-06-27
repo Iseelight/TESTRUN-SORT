@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --navy-blue: #0a2463;
+}
+
 /* Custom scrollbar styles */
 @layer utilities {
   .scrollbar-thin {
@@ -27,6 +31,10 @@
   * {
     @apply transition-colors duration-200;
   }
+  
+  body {
+    @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white;
+  }
 }
 
 /* Responsive typography */
@@ -34,16 +42,12 @@
   html {
     @apply antialiased;
   }
-  
-  body {
-    @apply bg-gray-50;
-  }
 }
 
 /* Form improvements */
 @layer components {
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
+    @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white;
   }
   
   .input-field:focus {
@@ -72,4 +76,28 @@
   .mobile-scroll {
     -webkit-overflow-scrolling: touch;
   }
+}
+
+/* Fix for dark mode text visibility */
+.dark .text-gray-900 {
+  color: #f9fafb;
+}
+
+.dark .text-gray-800 {
+  color: #f3f4f6;
+}
+
+.dark .text-gray-700 {
+  color: #e5e7eb;
+}
+
+/* Fix for chat interface extending issue */
+.min-h-screen {
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Navy blue color for the logo circle */
+.bg-navy-blue {
+  background-color: var(--navy-blue);
 }

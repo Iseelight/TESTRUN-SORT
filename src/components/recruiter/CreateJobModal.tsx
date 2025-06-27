@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Wand2, Share2, Copy, Check, Info } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Card } from '../ui/card';
+import { X, Wand2, Share2, Copy, Check, Info, FileText } from 'lucide-react';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
 import { useJobs } from '../../contexts/JobContext';
 
 interface CreateJobModalProps {
@@ -62,16 +62,15 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     customTitle: '',
-    company: 'TechCorp Inc.',
+    company: 'SortFast Inc.',
     location: '',
     customLocation: '',
     employment_type: 'Full-time',
     salary_min: '',
     salary_max: '',
     salary_currency: 'USD',
-    description: '',
     requirements: [''],
-    suggested_questions: [''],
+    description: '',
     skill_weights: {
       technical: 40,
       soft: 25,
@@ -83,7 +82,8 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
     active_days: 30,
     enable_waitlist: false,
     waitlist_duration: 7,
-    waitlist_message: 'You have successfully passed our assessment benchmark and demonstrated the qualifications we are looking for in this role. Due to the high volume of qualified applicants, you have been placed on our priority waitlist. Interview qualification results will be announced within the next 7 days. We appreciate your patience and will keep you updated on your application status.'
+    waitlist_message: 'You have successfully passed our assessment benchmark and demonstrated the qualifications we are looking for in this role. Due to the high volume of qualified applicants, you have been placed on our priority waitlist. Interview qualification results will be announced within the next 7 days. We appreciate your patience and will keep you updated on your application status.',
+    suggested_questions: ['']
   });
 
   if (!isOpen) return null;
@@ -147,7 +147,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
     const requirements = formData.requirements.filter(req => req.trim() !== '');
     
     if (!jobTitle || requirements.length === 0) {
-      alert("Please enter a job title and at least one requirement before generating a description.");
+      alert('Please enter a job title and at least one requirement to generate a description.');
       return;
     }
     
@@ -156,22 +156,16 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
       const description = await generateJobDescription(jobTitle, requirements);
       setFormData(prev => ({ ...prev, description }));
       
-      // Generate suggested interview questions based on job description and requirements
+      // Generate suggested interview questions based on job requirements
       const generatedQuestions = [
-        `What experience do you have with ${requirements[0]}?`,
+        `Can you explain your experience with ${requirements[0]}?`,
         `How have you applied ${requirements.length > 1 ? requirements[1] : requirements[0]} in your previous roles?`,
-        `Can you describe a project where you used ${jobTitle.includes('Developer') ? 'modern development practices' : 'industry best practices'}?`,
-        `How do you stay current with trends in ${jobTitle.includes('Developer') ? 'technology' : 'your field'}?`,
-        `What challenges have you faced when working with ${requirements.length > 2 ? requirements[2] : requirements[0]}?`
+        `What challenges have you faced when working with ${jobTitle.toLowerCase()} projects?`,
+        `How do you stay updated with the latest trends in ${jobTitle.toLowerCase()}?`,
+        `Can you describe a situation where you had to learn ${requirements.length > 2 ? requirements[2] : requirements[0]} quickly?`
       ];
       
       setSuggestedQuestions(generatedQuestions);
-      
-      // Update suggested questions in form data
-      setFormData(prev => ({
-        ...prev,
-        suggested_questions: generatedQuestions
-      }));
       
     } catch (error) {
       console.error('Failed to generate description:', error);
@@ -188,7 +182,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
     const requirements = formData.requirements.filter(req => req.trim() !== '');
     
     if (requirements.length === 0) {
-      alert("Please add at least one job requirement.");
+      alert('Please add at least one job requirement.');
       return;
     }
     
@@ -202,7 +196,6 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
       salary_currency: formData.salary_currency,
       description: formData.description,
       requirements,
-      suggested_questions: formData.suggested_questions.filter(q => q.trim() !== ''),
       skill_weights: formData.skill_weights,
       cutoff_percentage: formData.cutoff_percentage,
       max_candidates: formData.max_candidates,
@@ -210,6 +203,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
       enable_waitlist: formData.enable_waitlist,
       waitlist_duration: formData.waitlist_duration,
       waitlist_message: formData.waitlist_message,
+      suggested_questions: formData.suggested_questions.filter(q => q.trim() !== '')
     };
     
     try {
@@ -220,7 +214,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
       setFormData({
         title: '',
         customTitle: '',
-        company: 'TechCorp Inc.',
+        company: 'SortFast Inc.',
         location: '',
         customLocation: '',
         employment_type: 'Full-time',
@@ -229,7 +223,6 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
         salary_currency: 'USD',
         description: '',
         requirements: [''],
-        suggested_questions: [''],
         skill_weights: {
           technical: 40,
           soft: 25,
@@ -241,7 +234,8 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
         active_days: 30,
         enable_waitlist: false,
         waitlist_duration: 7,
-        waitlist_message: 'You have successfully passed our assessment benchmark and demonstrated the qualifications we are looking for in this role. Due to the high volume of qualified applicants, you have been placed on our priority waitlist. Interview qualification results will be announced within the next 7 days. We appreciate your patience and will keep you updated on your application status.'
+        waitlist_message: 'You have successfully passed our assessment benchmark and demonstrated the qualifications we are looking for in this role. Due to the high volume of qualified applicants, you have been placed on our priority waitlist. Interview qualification results will be announced within the next 7 days. We appreciate your patience and will keep you updated on your application status.',
+        suggested_questions: ['']
       });
     } catch (error) {
       console.error('Failed to create job:', error);
@@ -485,11 +479,36 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Suggested Interview Questions (Optional)
               </label>
-              <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                 <Info size={14} className="mr-1" />
-                AI will focus on these areas during interviews
+                <span>AI will focus on these areas</span>
               </div>
             </div>
+            
+            {suggestedQuestions.length > 0 && (
+              <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">AI Suggested Questions</h4>
+                <div className="space-y-2">
+                  {suggestedQuestions.map((question, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newQuestions = [...formData.suggested_questions];
+                          newQuestions[0] = question;
+                          setFormData(prev => ({ ...prev, suggested_questions: newQuestions }));
+                        }}
+                        className="text-xs bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 px-2 py-1 rounded hover:bg-blue-200 dark:hover:bg-blue-700"
+                      >
+                        Add
+                      </button>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">{question}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-2">
               {formData.suggested_questions.map((question, index) => (
                 <div key={index} className="flex gap-2">
@@ -521,33 +540,6 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
                 Add Question
               </Button>
             </div>
-            
-            {suggestedQuestions.length > 0 && (
-              <div className="mt-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">AI-Generated Question Suggestions</h4>
-                <ul className="space-y-1">
-                  {suggestedQuestions.map((question, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-blue-700 dark:text-blue-300">
-                      <button 
-                        type="button"
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-left"
-                        onClick={() => {
-                          const newQuestions = [...formData.suggested_questions];
-                          if (newQuestions[index] === '') {
-                            newQuestions[index] = question;
-                          } else {
-                            newQuestions.push(question);
-                          }
-                          setFormData(prev => ({ ...prev, suggested_questions: newQuestions }));
-                        }}
-                      >
-                        {question}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
 
           {/* Skill Weights */}
@@ -705,7 +697,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
             <Button
               type="submit"
               className="flex-1"
-              disabled={totalWeight !== 100}
+              disabled={totalWeight !== 100 || !formData.title || !formData.description || formData.requirements.filter(r => r.trim()).length === 0}
               loading={isLoading}
             >
               Create Job

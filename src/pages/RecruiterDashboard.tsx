@@ -6,9 +6,9 @@ import { FilterPanel } from '../components/recruiter/FilterPanel';
 import { JobPostingCard } from '../components/recruiter/JobPostingCard';
 import { CreateJobModal } from '../components/recruiter/CreateJobModal';
 import { LoginModal } from '../components/auth/LoginModal';
-import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
 import { useAuth } from '../contexts/AuthContext';
 import { useJobs } from '../contexts/JobContext';
 
@@ -39,8 +39,6 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
   const [showCreateJobModal, setShowCreateJobModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
-  const [mockCandidates, setMockCandidates] = useState<any[]>([]);
-  const [mockJobs, setMockJobs] = useState<any[]>([]);
 
   // Check if user is trying to access with candidate account
   useEffect(() => {
@@ -51,150 +49,12 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
     }
   }, [user]);
 
-  // Generate mock data for testing
+  // Fetch recruiter's jobs when user is available
   useEffect(() => {
     if (user && user.role === 'recruiter') {
-      // Generate mock jobs
-      const mockJobsData = [
-        {
-          id: 'job_1',
-          title: 'Senior Frontend Developer',
-          company: 'TechCorp Inc.',
-          description: 'We are looking for an experienced Frontend Developer...',
-          requirements: ['5+ years React', 'TypeScript', 'Modern CSS'],
-          location: 'San Francisco, CA',
-          employment_type: 'Full-time',
-          skillWeights: { technical: 40, soft: 25, leadership: 20, communication: 15 },
-          cutoffPercentage: 75,
-          maxCandidates: 50,
-          status: 'active',
-          createdAt: new Date(),
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          recruiterId: user.id,
-          selectedCandidates: 3,
-          rejectedCandidates: 5,
-          totalApplications: 12
-        },
-        {
-          id: 'job_2',
-          title: 'Product Manager',
-          company: 'TechCorp Inc.',
-          description: 'Join our product team to drive strategy...',
-          requirements: ['3+ years PM experience', 'Technical background', 'Data-driven'],
-          location: 'Remote',
-          employment_type: 'Full-time',
-          skillWeights: { technical: 25, soft: 30, leadership: 30, communication: 15 },
-          cutoffPercentage: 70,
-          maxCandidates: 30,
-          status: 'active',
-          createdAt: new Date(),
-          expiresAt: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000),
-          recruiterId: user.id,
-          selectedCandidates: 2,
-          rejectedCandidates: 3,
-          totalApplications: 8
-        }
-      ];
-      setMockJobs(mockJobsData);
-      
-      // Generate mock candidates
-      const statuses = ['pending', 'selected', 'rejected', 'waitlisted'];
-      const locations = ['San Francisco, CA', 'New York, NY', 'Remote', 'London, UK', 'Berlin, Germany'];
-      
-      const mockCandidatesData = Array.from({ length: 15 }, (_, i) => {
-        const jobId = mockJobsData[i % 2].id;
-        const status = statuses[Math.floor(Math.random() * statuses.length)];
-        const baseScore = 60 + Math.random() * 35;
-        
-        return {
-          id: `candidate_${i + 1}`,
-          name: `Candidate ${i + 1}`,
-          email: `candidate${i + 1}@example.com`,
-          phone: `+1 555-${100 + i}`,
-          location: locations[i % locations.length],
-          scores: {
-            overall: Math.round(baseScore),
-            technical: Math.round(baseScore + (Math.random() - 0.5) * 15),
-            soft: Math.round(baseScore + (Math.random() - 0.5) * 10),
-            leadership: Math.round(baseScore + (Math.random() - 0.5) * 20),
-            communication: Math.round(baseScore + (Math.random() - 0.5) * 5)
-          },
-          status,
-          appliedAt: new Date(Date.now() - Math.random() * 10 * 24 * 60 * 60 * 1000),
-          jobId
-        };
-      });
-      
-      setMockCandidates(mockCandidatesData);
+      fetchMyJobs();
     }
-  }, [user]);
-
-  // Filter candidates based on criteria
-  const filteredCandidates = mockCandidates.filter(candidate => {
-    const matchesSearch = candidate.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.location?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesScore = candidate.scores?.overall >= minScore;
-    const matchesLocation = !selectedLocation || candidate.location?.includes(selectedLocation);
-    const matchesStatus = !selectedStatus || candidate.status === selectedStatus;
-    const matchesJob = !selectedJob || candidate.jobId === selectedJob;
-
-    return matchesSearch && matchesScore && matchesLocation && matchesStatus && matchesJob;
-  });
-
-  const resetFilters = () => {
-    setSearchTerm('');
-    setMinScore(0);
-    setSelectedLocation('');
-    setSelectedStatus('');
-    setSelectedJob('');
-  };
-
-  const getCandidateCount = (jobId: string) => {
-    return mockCandidates.filter(candidate => candidate.jobId === jobId).length;
-  };
-
-  const getStatusCounts = () => {
-    const counts = {
-      total: mockCandidates.length,
-      selected: mockCandidates.filter(c => c.status === 'selected').length,
-      pending: mockCandidates.filter(c => c.status === 'pending').length,
-      waitlisted: mockCandidates.filter(c => c.status === 'waitlisted').length,
-      rejected: mockCandidates.filter(c => c.status === 'rejected').length
-    };
-    return counts;
-  };
-
-  const handleSelectCandidate = async (candidateId: string) => {
-    try {
-      // Update mock candidate status
-      setMockCandidates(prev => 
-        prev.map(c => c.id === candidateId ? {...c, status: 'selected'} : c)
-      );
-    } catch (error) {
-      console.error('Failed to select candidate:', error);
-    }
-  };
-
-  const handleRejectCandidate = async (candidateId: string) => {
-    const reason = prompt('Please provide a reason for rejection (optional):');
-    try {
-      // Update mock candidate status
-      setMockCandidates(prev => 
-        prev.map(c => c.id === candidateId ? {...c, status: 'rejected'} : c)
-      );
-    } catch (error) {
-      console.error('Failed to reject candidate:', error);
-    }
-  };
-
-  const handleViewCandidates = async (jobId: string) => {
-    setSelectedJob(jobId);
-    setView('candidates');
-  };
-
-  const statusCounts = getStatusCounts();
+  }, [user, fetchMyJobs]);
 
   // Show login modal if not authenticated
   if (!user) {
@@ -255,6 +115,88 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
               </p>
               <Button onClick={onBack}>
                 Return to Home
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Filter candidates based on criteria
+  const filteredCandidates = candidates.filter(candidate => {
+    const matchesSearch = candidate.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         candidate.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         candidate.location?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesScore = candidate.scores?.overall >= minScore;
+    const matchesLocation = !selectedLocation || candidate.location?.includes(selectedLocation);
+    const matchesStatus = !selectedStatus || candidate.status === selectedStatus;
+    const matchesJob = !selectedJob || candidate.job_id === selectedJob;
+
+    return matchesSearch && matchesScore && matchesLocation && matchesStatus && matchesJob;
+  });
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setMinScore(0);
+    setSelectedLocation('');
+    setSelectedStatus('');
+    setSelectedJob('');
+  };
+
+  const getCandidateCount = (jobId: string) => {
+    return candidates.filter(candidate => candidate.job_id === jobId).length;
+  };
+
+  const getStatusCounts = () => {
+    const counts = {
+      total: candidates.length,
+      selected: candidates.filter(c => c.status === 'selected').length,
+      pending: candidates.filter(c => c.status === 'pending').length,
+      waitlisted: candidates.filter(c => c.status === 'waitlisted').length,
+      rejected: candidates.filter(c => c.status === 'rejected').length
+    };
+    return counts;
+  };
+
+  const handleSelectCandidate = async (candidateId: string) => {
+    try {
+      await selectCandidate(candidateId);
+    } catch (error) {
+      console.error('Failed to select candidate:', error);
+    }
+  };
+
+  const handleRejectCandidate = async (candidateId: string) => {
+    const reason = prompt('Please provide a reason for rejection (optional):');
+    try {
+      await rejectCandidate(candidateId, reason || undefined);
+    } catch (error) {
+      console.error('Failed to reject candidate:', error);
+    }
+  };
+
+  const handleViewCandidates = async (jobId: string) => {
+    setSelectedJob(jobId);
+    setView('candidates');
+    await fetchCandidatesByJob(jobId);
+  };
+
+  const statusCounts = getStatusCounts();
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <Header userType="recruiter" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+          <Card>
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Error</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>
+                Retry
               </Button>
             </div>
           </Card>
@@ -329,32 +271,32 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
               </Card>
               <Card>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{statusCounts.selected}</div>
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">{statusCounts.selected}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Selected</div>
                 </div>
               </Card>
               <Card>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{statusCounts.pending}</div>
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{statusCounts.pending}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Pending Review</div>
                 </div>
               </Card>
               <Card>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">{statusCounts.waitlisted}</div>
+                  <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{statusCounts.waitlisted}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Waitlisted</div>
                 </div>
               </Card>
               <Card>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{statusCounts.rejected}</div>
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">{statusCounts.rejected}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Rejected</div>
                 </div>
               </Card>
             </div>
 
             {/* Recent Activity */}
-            {mockJobs.length === 0 ? (
+            {jobs.length === 0 ? (
               <Card>
                 <div className="text-center py-12">
                   <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -373,7 +315,7 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                 <Card>
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Your Job Postings</h2>
                   <div className="space-y-4">
-                    {mockJobs.slice(0, 3).map(job => (
+                    {jobs.slice(0, 3).map(job => (
                       <div key={job.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div>
                           <h3 className="font-medium text-gray-900 dark:text-white">{job.title}</h3>
@@ -397,7 +339,7 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                 <Card>
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Recent Candidates</h2>
                   <div className="space-y-4">
-                    {mockCandidates.slice(0, 3).map(candidate => (
+                    {candidates.slice(0, 3).map(candidate => (
                       <div key={candidate.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div>
                           <h3 className="font-medium text-gray-900 dark:text-white">{candidate.name}</h3>
@@ -407,7 +349,7 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                           <Badge variant={
                             candidate.status === 'selected' ? 'success' : 
                             candidate.status === 'rejected' ? 'error' : 
-                            candidate.status === 'waitlisted' ? 'warning' : 'default'
+                            candidate.status === 'waitlisted' ? 'warning' : 'info'
                           }>
                             {candidate.status}
                           </Badge>
@@ -458,7 +400,7 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
               </Button>
             </div>
 
-            {mockJobs.length === 0 ? (
+            {jobs.length === 0 ? (
               <Card>
                 <div className="text-center py-12">
                   <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -474,7 +416,7 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
               </Card>
             ) : (
               <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {mockJobs.map(job => (
+                {jobs.map(job => (
                   <JobPostingCard
                     key={job.id}
                     job={job}
@@ -507,7 +449,7 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                 />
 
                 {/* Job Filter */}
-                {mockJobs.length > 0 && (
+                {jobs.length > 0 && (
                   <Card>
                     <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Filter by Job</h4>
                     <select
@@ -516,7 +458,7 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       <option value="">All Jobs</option>
-                      {mockJobs.map(job => (
+                      {jobs.map(job => (
                         <option key={job.id} value={job.id}>{job.title}</option>
                       ))}
                     </select>
@@ -545,15 +487,15 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                     <div className="text-center py-12">
                       <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        {mockCandidates.length === 0 ? 'No candidates yet' : 'No candidates found'}
+                        {candidates.length === 0 ? 'No candidates yet' : 'No candidates found'}
                       </h3>
                       <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        {mockCandidates.length === 0 
+                        {candidates.length === 0 
                           ? 'Candidates will appear here once they apply to your job postings.'
                           : 'Try adjusting your filters to see more results.'
                         }
                       </p>
-                      {mockCandidates.length > 0 && (
+                      {candidates.length > 0 && (
                         <Button variant="outline" onClick={resetFilters}>Reset Filters</Button>
                       )}
                     </div>

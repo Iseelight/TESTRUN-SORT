@@ -11,11 +11,10 @@ import {
   Wifi,
   WifiOff,
   CheckCircle,
-  RefreshCw,
 } from "lucide-react"
-import { Button } from '../ui/button';
-import { Card } from '../ui/card';
-import { Badge } from "../ui/badge"
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
+import { Badge } from "../ui/Badge"
 import { Textarea } from "../ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Progress } from "../ui/progress"
@@ -60,8 +59,6 @@ export function AssessmentInterface({
   // Audio States
   const [isMuted, setIsMuted] = useState(true) // Start muted
   const [audioLevel, setAudioLevel] = useState(0)
-  const [microphoneError, setMicrophoneError] = useState<string | null>(null)
-  const [microphonePermissionDenied, setMicrophonePermissionDenied] = useState(false)
 
   // Assessment States
   const [isAssessmentActive, setIsAssessmentActive] = useState(false)
@@ -81,7 +78,7 @@ export function AssessmentInterface({
   const [speechRecognitionSupported, setSpeechRecognitionSupported] = useState(false)
 
   // UI States
-  const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connecting")
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected")
   const [autoScroll, setAutoScroll] = useState(true)
 
   // Face detection states
@@ -107,120 +104,6 @@ export function AssessmentInterface({
   const streamRef = useRef<MediaStream | null>(null)
   const isStoppingRecognitionRef = useRef(false)
   const shouldRestartRecognitionRef = useRef(false)
-
-  // Retry microphone access
-  const retryMicrophoneAccess = useCallback(async () => {
-    setMicrophoneError(null)
-    setMicrophonePermissionDenied(false)
-    setConnectionStatus("connecting")
-    
-    // Clean up existing stream
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop())
-      streamRef.current = null
-    }
-    
-    // Clean up existing audio context
-    if (audioContextRef.current) {
-      await audioContextRef.current.close()
-      audioContextRef.current = null
-    }
-    
-    // Try to initialize audio again
-    await initializeAudio()
-  }, [])
-
-  // Initialize microphone
-  const initializeAudio = useCallback(async () => {
-    let analyser: AnalyserNode | null = null
-
-    try {
-      setConnectionStatus("connecting")
-      setMicrophoneError(null)
-      setMicrophonePermissionDenied(false)
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      })
-
-      streamRef.current = stream
-
-      audioContextRef.current = new AudioContext()
-      analyser = audioContextRef.current.createAnalyser()
-      const microphone = audioContextRef.current.createMediaStreamSource(stream)
-      microphone.connect(analyser)
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount)
-
-      const updateAudioLevel = () => {
-        if (analyser && !isMuted) {
-          analyser.getByteFrequencyData(dataArray)
-          const average = dataArray.reduce((a, b) => a + b) / dataArray.length
-          setAudioLevel(average)
-        } else {
-          setAudioLevel(0)
-        }
-        requestAnimationFrame(updateAudioLevel)
-      }
-      updateAudioLevel()
-
-      const audioTracks = stream.getAudioTracks()
-      audioTracks.forEach((track) => {
-        track.enabled = false
-      })
-
-      setConnectionStatus("connected")
-      console.log("Microphone access granted successfully")
-    } catch (error: any) {
-      console.error("Error accessing microphone:", error)
-      
-      let errorMessage = "Unknown microphone error"
-      let isPermissionError = false
-      
-      if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
-        errorMessage = "Microphone access denied. Please allow microphone permissions in your browser."
-        isPermissionError = true
-      } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
-        errorMessage = "No microphone found. Please connect a microphone and try again."
-      } else if (error.name === "NotReadableError" || error.name === "TrackStartError") {
-        errorMessage = "Microphone is being used by another application. Please close other apps using the microphone."
-      } else if (error.name === "OverconstrainedError" || error.name === "ConstraintNotSatisfiedError") {
-        errorMessage = "Microphone doesn't support the required audio settings."
-      } else if (error.name === "NotSupportedError") {
-        errorMessage = "Microphone access is not supported in this browser."
-      } else if (error.message) {
-        errorMessage = error.message
-        if (error.message.toLowerCase().includes("permission") || error.message.toLowerCase().includes("denied")) {
-          isPermissionError = true
-        }
-      }
-      
-      setMicrophoneError(errorMessage)
-      setMicrophonePermissionDenied(isPermissionError)
-      setConnectionStatus("disconnected")
-    }
-
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop())
-      }
-      if (analyser) {
-        analyser.disconnect()
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close()
-      }
-    }
-  }, [isMuted])
-
-  // Initialize microphone on component mount
-  useEffect(() => {
-    initializeAudio()
-  }, [initializeAudio])
 
   // Handle security alerts from face detection
   const handleSecurityAlert = useCallback((alert: SecurityAlert) => {
@@ -278,6 +161,68 @@ export function AssessmentInterface({
       }, 5000)
     }
   }, [faceWarningCount, messages, currentQuestion, securityAlerts, assessmentStartTime, config.questions.length, onAssessmentComplete])
+
+  // Initialize microphone
+  useEffect(() => {
+    let analyser: AnalyserNode | null = null
+
+    const initializeAudio = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        })
+
+        streamRef.current = stream
+
+        audioContextRef.current = new AudioContext()
+        analyser = audioContextRef.current.createAnalyser()
+        const microphone = audioContextRef.current.createMediaStreamSource(stream)
+        microphone.connect(analyser)
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount)
+
+        const updateAudioLevel = () => {
+          if (analyser && !isMuted) {
+            analyser.getByteFrequencyData(dataArray)
+            const average = dataArray.reduce((a, b) => a + b) / dataArray.length
+            setAudioLevel(average)
+          } else {
+            setAudioLevel(0)
+          }
+          requestAnimationFrame(updateAudioLevel)
+        }
+        updateAudioLevel()
+
+        const audioTracks = stream.getAudioTracks()
+        audioTracks.forEach((track) => {
+          track.enabled = false
+        })
+
+        setConnectionStatus("connected")
+      } catch (error) {
+        console.error("Error accessing microphone:", error)
+        setConnectionStatus("disconnected")
+      }
+    }
+
+    initializeAudio()
+
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop())
+      }
+      if (analyser) {
+        analyser.disconnect()
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close()
+      }
+    }
+  }, [isMuted])
 
   // Safe speech recognition stop function
   const stopSpeechRecognition = useCallback(() => {
@@ -361,15 +306,15 @@ export function AssessmentInterface({
           }
         }
 
-        // Apply auto-correction and filter out filler words
+        // Apply auto-correction and filter out fillers
         interimTranscript = autoCorrectTranscript(interimTranscript)
         setLiveTranscript(interimTranscript)
 
         if (finalTranscript.trim()) {
-          finalTranscript = autoCorrectTranscript(finalTranscript)
-          setFinalTranscript(finalTranscript.trim())
+          finalTranscript = autoCorrectTranscript(finalTranscript.trim())
+          setFinalTranscript(finalTranscript)
           setInputText((prev) => {
-            const newText = prev + (prev ? " " : "") + finalTranscript.trim()
+            const newText = prev + (prev ? " " : "") + finalTranscript
             return newText
           })
 
@@ -445,26 +390,43 @@ export function AssessmentInterface({
     }
   }, [isAssessmentActive, isAssessmentTerminated, isAIReading, canUserRespond, startSpeechRecognition])
 
-  // Auto-correct transcript
+  // Auto-correct transcript to fix grammar and remove fillers
   const autoCorrectTranscript = (text: string): string => {
-    // Remove filler words
-    let corrected = text.replace(/\b(um|uh|er|like|you know|I mean|so)\b/gi, ' ')
+    // Remove common filler words
+    const fillerWords = ['um', 'uh', 'er', 'ah', 'like', 'you know', 'sort of', 'kind of', 'basically'];
+    let corrected = text;
+    
+    fillerWords.forEach(filler => {
+      const regex = new RegExp(`\\b${filler}\\b`, 'gi');
+      corrected = corrected.replace(regex, '');
+    });
     
     // Fix common grammar issues
-    corrected = corrected.replace(/\bi\b/g, 'I')
-    corrected = corrected.replace(/\bi'm\b/gi, "I'm")
-    corrected = corrected.replace(/\bi've\b/gi, "I've")
-    corrected = corrected.replace(/\bi'll\b/gi, "I'll")
-    corrected = corrected.replace(/\bi'd\b/gi, "I'd")
-    corrected = corrected.replace(/\bwont\b/gi, "won't")
-    corrected = corrected.replace(/\bcant\b/gi, "can't")
-    corrected = corrected.replace(/\bdont\b/gi, "don't")
+    corrected = corrected
+      .replace(/\bi\b/g, 'I')
+      .replace(/\bi'm\b/g, "I'm")
+      .replace(/\bi've\b/g, "I've")
+      .replace(/\bi'll\b/g, "I'll")
+      .replace(/\bi'd\b/g, "I'd")
+      .replace(/\bim\b/g, "I'm")
+      .replace(/\bdont\b/g, "don't")
+      .replace(/\bwont\b/g, "won't")
+      .replace(/\bcant\b/g, "can't")
+      .replace(/\bisnt\b/g, "isn't")
+      .replace(/\bhasnt\b/g, "hasn't")
+      .replace(/\bwasnt\b/g, "wasn't")
+      .replace(/\barent\b/g, "aren't")
+      .replace(/\bwerent\b/g, "weren't")
+      .replace(/\bhavent\b/g, "haven't")
+      .replace(/\bcouldnt\b/g, "couldn't")
+      .replace(/\bwouldnt\b/g, "wouldn't")
+      .replace(/\bshouldnt\b/g, "shouldn't");
     
-    // Remove extra spaces
-    corrected = corrected.replace(/\s+/g, ' ').trim()
+    // Clean up multiple spaces
+    corrected = corrected.replace(/\s+/g, ' ').trim();
     
-    return corrected
-  }
+    return corrected;
+  };
 
   // Timer countdown - Only starts after timer is enabled
   useEffect(() => {
@@ -559,7 +521,7 @@ export function AssessmentInterface({
         }
         
         // Auto-start speech recognition when AI finishes speaking
-        if (speechRecognitionSupported && !isTranscribing && connectionStatus === "connected") {
+        if (speechRecognitionSupported && !isTranscribing) {
           startSpeechRecognition()
         }
       }
@@ -577,7 +539,7 @@ export function AssessmentInterface({
   }
 
   const toggleMute = () => {
-    if (isAIReading || connectionStatus !== "connected") return
+    if (isAIReading) return
 
     setIsMuted(!isMuted)
     if (streamRef.current) {
@@ -600,7 +562,7 @@ export function AssessmentInterface({
   }
 
   const toggleTranscription = () => {
-    if (isAIReading || !speechRecognitionSupported || connectionStatus !== "connected") return
+    if (isAIReading || !speechRecognitionSupported) return
 
     if (isTranscribing) {
       stopSpeechRecognition()
@@ -749,62 +711,10 @@ Let's begin with our first question: ${config.questions[0]}`,
         onFaceAwayViolation={handleFaceAwayViolation}
       />
 
-      {/* Microphone Permission Error Modal */}
-      {microphoneError && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="p-6 max-w-lg mx-4 border-red-500 bg-white dark:bg-gray-800">
-            <div className="text-center space-y-4">
-              <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Microphone Access Required
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                {microphoneError}
-              </p>
-              
-              {microphonePermissionDenied && (
-                <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2 text-left bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
-                  <p className="font-semibold">To fix this issue:</p>
-                  <ol className="list-decimal list-inside space-y-1">
-                    <li>Look for a microphone icon in your browser's address bar</li>
-                    <li>Click on it and select "Allow" for microphone access</li>
-                    <li>If no icon appears, go to your browser settings and allow microphone access for this site</li>
-                    <li>Check your computer's privacy settings to ensure your browser can access the microphone</li>
-                    <li>Restart your browser if needed</li>
-                  </ol>
-                </div>
-              )}
-              
-              <div className="flex space-x-3 justify-center">
-                <Button 
-                  onClick={retryMicrophoneAccess}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Retry Access
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    setMicrophoneError(null)
-                    setMicrophonePermissionDenied(false)
-                  }}
-                >
-                  Continue Without Microphone
-                </Button>
-              </div>
-              
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                Note: Voice transcription will not be available without microphone access, but you can still type your responses.
-              </p>
-            </div>
-          </Card>
-        </div>
-      )}
-
       {/* Face Detection Warning Modal */}
       {showFaceWarning && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="p-6 max-w-md mx-4 border-red-500 bg-white dark:bg-gray-800">
+          <Card className="p-6 max-w-md mx-4 border-red-500 bg-red-50 dark:bg-red-900">
             <div className="text-center space-y-4">
               <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
               <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">
@@ -880,7 +790,7 @@ Let's begin with our first question: ${config.questions[0]}`,
                     {formatTime(timeRemaining)}
                   </Badge>
                 )}
-                {faceWarningCount > 0 && <Badge variant="destructive">Warnings: {faceWarningCount}/2</Badge>}
+                {faceWarningCount > 0 && <Badge variant="error">Warnings: {faceWarningCount}/2</Badge>}
               </>
             )}
             <Button variant="ghost" size="sm">
@@ -906,7 +816,7 @@ Let's begin with our first question: ${config.questions[0]}`,
         <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 pb-20" onScroll={handleScroll}>
           {!isAssessmentActive ? (
             <div className="flex items-center justify-center h-full">
-              <Card className="p-8 text-center max-w-md bg-white dark:bg-gray-800">
+              <Card className="p-8 text-center max-w-md">
                 <div className="space-y-4">
                   <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto">
                     <User className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -927,10 +837,7 @@ Let's begin with our first question: ${config.questions[0]}`,
                     <p>• Assessment terminates after 2 warnings</p>
                     <p>• Timer starts after first question is read</p>
                     {!speechRecognitionSupported && (
-                      <p className="text-orange-600">• Voice transcription not supported in this browser</p>
-                    )}
-                    {connectionStatus === "disconnected" && (
-                      <p className="text-red-600">• Microphone access denied - voice features disabled</p>
+                      <p className="text-orange-600 dark:text-orange-400">• Voice transcription not supported in this browser</p>
                     )}
                   </div>
                   <Button onClick={startAssessment} className="w-full" disabled={isAssessmentTerminated}>
@@ -1014,7 +921,7 @@ Let's begin with our first question: ${config.questions[0]}`,
         )}
 
         {/* Live Transcription Display */}
-        {isTranscribing && !isAIReading && speechRecognitionSupported && connectionStatus === "connected" && (
+        {isTranscribing && !isAIReading && speechRecognitionSupported && (
           <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 border-t border-blue-200 dark:border-blue-700">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -1088,77 +995,18 @@ Let's begin with our first question: ${config.questions[0]}`,
               </div>
             )}
 
-            {/* Microphone disconnected warning */}
-            {connectionStatus === "disconnected" && (
-              <div className="mb-3 p-2 bg-orange-50 dark:bg-orange-900 border border-orange-200 dark:border-orange-700 rounded-lg">
-                <div className="flex items-center justify-between text-orange-700 dark:text-orange-300 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <MicOff className="w-4 h-4" />
-                    <span>Microphone access denied - voice features disabled</span>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={retryMicrophoneAccess}
-                    className="text-orange-600 border-orange-300 hover:bg-orange-100 dark:hover:bg-orange-800 dark:border-orange-600"
-                  >
-                    <RefreshCw className="w-3 h-3 mr-1" />
-                    Retry
-                  </Button>
-                </div>
-              </div>
-            )}
-
             <div className="flex items-end space-x-3">
-              {/* Audio Controls */}
-              <div className="flex space-x-2">
-                <Button
-                  size="sm"
-                  variant={isMuted ? "destructive" : "secondary"}
-                  onClick={toggleMute}
-                  className="rounded-full w-10 h-10 p-0"
-                  disabled={isAIReading || connectionStatus !== "connected"}
-                  title={
-                    connectionStatus !== "connected" 
-                      ? "Microphone not available" 
-                      : isMuted 
-                        ? "Unmute microphone" 
-                        : "Mute microphone"
-                  }
-                >
-                  {isMuted || connectionStatus !== "connected" ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </Button>
-
-                <Button
-                  size="sm"
-                  variant={isTranscribing ? "default" : "outline"}
-                  onClick={toggleTranscription}
-                  className={`rounded-full w-10 h-10 p-0 transition-all duration-200 ${
-                    isTranscribing
-                      ? "bg-red-500 hover:bg-red-600 border-red-500 shadow-lg"
-                      : "hover:bg-blue-50 dark:hover:bg-blue-900"
-                  }`}
-                  disabled={isAIReading || !canUserRespond || !speechRecognitionSupported || connectionStatus !== "connected"}
-                  title={
-                    connectionStatus !== "connected"
-                      ? "Microphone not available"
-                      : !speechRecognitionSupported
-                        ? "Voice transcription not supported"
-                        : isTranscribing
-                          ? "Stop voice transcription"
-                          : "Start voice transcription"
-                  }
-                >
-                  {isTranscribing ? (
-                    <div className="relative">
-                      <div className="w-4 h-4 bg-white rounded-full animate-pulse" />
-                      <div className="absolute inset-0 w-4 h-4 border-2 border-white rounded-full animate-ping" />
-                    </div>
-                  ) : (
-                    <Mic className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
+              {/* Audio Controls - Single Mic Button */}
+              <Button
+                size="sm"
+                variant={isMuted ? "danger" : "secondary"}
+                onClick={toggleMute}
+                className="rounded-full w-10 h-10 p-0"
+                disabled={isAIReading}
+                title={isMuted ? "Unmute microphone" : "Mute microphone"}
+              >
+                {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </Button>
 
               {/* Text Input */}
               <div className="flex-1">
@@ -1172,11 +1020,9 @@ Let's begin with our first question: ${config.questions[0]}`,
                         ? "Wait for AI to finish, then you can respond..."
                         : !faceDetectionData.faceDetected
                           ? "Align your face with the camera to respond..."
-                          : connectionStatus !== "connected"
-                            ? "Type your response (voice input unavailable)..."
-                            : "Type your response or use voice input..."
+                          : "Type your response or use voice input..."
                   }
-                  className="min-h-[44px] max-h-32 resize-none rounded-2xl border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="min-h-[44px] max-h-32 resize-none rounded-2xl border-gray-300 dark:border-gray-600"
                   disabled={isAIReading || !canUserRespond}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
@@ -1215,7 +1061,7 @@ Let's begin with our first question: ${config.questions[0]}`,
                 ) : (
                   <>
                     <span>Press Enter to send, Shift+Enter for new line</span>
-                    {isTranscribing && speechRecognitionSupported && connectionStatus === "connected" && (
+                    {isTranscribing && speechRecognitionSupported && (
                       <span className="text-blue-600 dark:text-blue-400 flex items-center bg-blue-50 dark:bg-blue-900 px-2 py-1 rounded-full">
                         <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2" />
                         <Mic className="w-3 h-3 mr-1" />
