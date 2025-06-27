@@ -52,7 +52,8 @@ const MOCK_JOBS = [
     expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     created_at: new Date().toISOString(),
     enable_waitlist: true,
-    waitlist_message: 'You have successfully passed our assessment benchmark and demonstrated the qualifications we are looking for in this role. Due to the high volume of qualified applicants, you have been placed on our priority waitlist.'
+    waitlist_message: 'You have successfully passed our assessment benchmark and demonstrated the qualifications we are looking for in this role. Due to the high volume of qualified applicants, you have been placed on our priority waitlist.',
+    allow_retake: true
   },
   {
     id: 'job_2',
@@ -83,7 +84,8 @@ const MOCK_JOBS = [
     expires_at: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
     created_at: new Date().toISOString(),
     enable_waitlist: false,
-    waitlist_message: ''
+    waitlist_message: '',
+    allow_retake: false
   },
   {
     id: 'job_3',
@@ -114,7 +116,8 @@ const MOCK_JOBS = [
     expires_at: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
     created_at: new Date().toISOString(),
     enable_waitlist: true,
-    waitlist_message: 'You have been placed on our waitlist due to high volume of qualified applicants.'
+    waitlist_message: 'You have been placed on our waitlist due to high volume of qualified applicants.',
+    allow_retake: true
   }
 ];
 
@@ -140,7 +143,7 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
 
   // Assessment configuration
   const assessmentConfig: AssessmentConfig = {
-    duration: 5, // Changed to 5 minutes
+    duration: 5, // 5 minutes
     questions: [
       "Tell me about yourself and why you're interested in this position.",
       "What are your greatest strengths and how do they relate to this role?",
@@ -156,7 +159,8 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
     enableFaceDetection: true,
     enableScreenLock: true,
     enableAudioRecording: true,
-    maxViolations: 2
+    maxViolations: 2,
+    allowRetake: true
   };
 
   // Check if user is trying to access with recruiter account
@@ -357,12 +361,19 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
   };
 
   const handleRetakeSession = () => {
-    // Reset session state
-    setSessionTerminated(false);
-    setSessionViolations([]);
-    setTerminationReason('');
-    setCvAnalysisProgress(0);
-    setStep('application');
+    // Check if job allows retakes
+    if (selectedJob && selectedJob.allow_retake) {
+      // Reset session state
+      setSessionTerminated(false);
+      setSessionViolations([]);
+      setTerminationReason('');
+      // Skip directly to assessment without refilling the form
+      setStep('assessment');
+    } else {
+      // If retakes not allowed, go back to jobs
+      setSessionTerminated(false);
+      setStep('jobs');
+    }
   };
 
   const handleExitSession = () => {
@@ -691,7 +702,10 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
         {/* AI Assessment */}
         {step === 'assessment' && (
           <AssessmentInterface
-            config={assessmentConfig}
+            config={{
+              ...assessmentConfig,
+              allowRetake: selectedJob?.allow_retake || false
+            }}
             onAssessmentComplete={handleAssessmentComplete}
           />
         )}

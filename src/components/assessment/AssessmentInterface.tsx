@@ -37,7 +37,7 @@ interface AssessmentInterfaceProps {
 
 export function AssessmentInterface({ 
   config = {
-    duration: 5, // Changed to 5 minutes
+    duration: 5, // 5 minutes
     questions: [
       "Tell me about yourself and why you're interested in this position.",
       "What are your greatest strengths and how do they relate to this role?",
@@ -53,7 +53,8 @@ export function AssessmentInterface({
     enableFaceDetection: true,
     enableScreenLock: true,
     enableAudioRecording: true,
-    maxViolations: 2
+    maxViolations: 2,
+    allowRetake: true
   },
   onAssessmentComplete
 }: AssessmentInterfaceProps) {
@@ -61,8 +62,6 @@ export function AssessmentInterface({
   const [isMuted, setIsMuted] = useState(true) // Start muted
   const [audioLevel, setAudioLevel] = useState(0)
   const [microphonePermission, setMicrophonePermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
-  const [microphoneError, setMicrophoneError] = useState<string | null>(null)
-  const [showPermissionModal, setShowPermissionModal] = useState(false)
 
   // Assessment States
   const [isAssessmentActive, setIsAssessmentActive] = useState(false)
@@ -181,7 +180,6 @@ export function AssessmentInterface({
         })
 
         setMicrophonePermission('granted')
-        setMicrophoneError(null)
         streamRef.current = stream
 
         audioContextRef.current = new AudioContext()
@@ -213,22 +211,8 @@ export function AssessmentInterface({
         console.error("Error accessing microphone:", error)
         setConnectionStatus("disconnected")
         
-        // Handle specific error types
-        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-          setMicrophonePermission('denied')
-          setMicrophoneError('Microphone access denied. Please check your browser permissions.')
-          setShowPermissionModal(true)
-        } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-          setMicrophoneError('No microphone found. Please connect a microphone and try again.')
-        } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-          setMicrophoneError('Could not access microphone. It may be in use by another application.')
-        } else if (error.name === 'OverconstrainedError') {
-          setMicrophoneError('Microphone does not meet the required constraints.')
-        } else if (error.name === 'TypeError') {
-          setMicrophoneError('Audio is not supported in this browser.')
-        } else {
-          setMicrophoneError(`Microphone error: ${error.message || 'Unknown error'}`)
-        }
+        // Set microphone permission to denied but continue without showing modal
+        setMicrophonePermission('denied')
       }
     }
 
@@ -366,8 +350,6 @@ export function AssessmentInterface({
             setLiveTranscript("")
             shouldRestartRecognitionRef.current = false
             setMicrophonePermission('denied')
-            setMicrophoneError('Microphone access denied. Please check your browser permissions.')
-            setShowPermissionModal(true)
             return
           case "no-speech":
             console.log("No speech detected")
@@ -546,69 +528,6 @@ export function AssessmentInterface({
     }
   }
 
-  const toggleTranscription = () => {
-    if (isAIReading || !speechRecognitionSupported || microphonePermission !== 'granted') return
-
-    if (isTranscribing) {
-      stopSpeechRecognition()
-    } else {
-      if (canUserRespond && !isAIReading) {
-        startSpeechRecognition()
-      }
-    }
-  }
-
-  const requestMicrophonePermission = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      
-      // Stop the stream immediately, we just needed the permission
-      stream.getTracks().forEach(track => track.stop())
-      
-      setMicrophonePermission('granted')
-      setMicrophoneError(null)
-      setShowPermissionModal(false)
-      
-      // Reinitialize audio
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop())
-      }
-      
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        }
-      })
-      
-      streamRef.current = newStream
-      
-      // Set up audio context and analyzer
-      if (audioContextRef.current) {
-        audioContextRef.current.close()
-      }
-      
-      audioContextRef.current = new AudioContext()
-      const analyser = audioContextRef.current.createAnalyser()
-      const microphone = audioContextRef.current.createMediaStreamSource(newStream)
-      microphone.connect(analyser)
-      
-      // Mute by default
-      const audioTracks = newStream.getAudioTracks()
-      audioTracks.forEach(track => {
-        track.enabled = false
-      })
-      
-      setConnectionStatus("connected")
-      
-    } catch (error) {
-      console.error("Error requesting microphone permission:", error)
-      setMicrophonePermission('denied')
-      setMicrophoneError('Microphone access denied. You can continue without voice input.')
-    }
-  }
-
   const startAssessment = () => {
     setIsAssessmentActive(true)
     setFaceWarningCount(0)
@@ -731,60 +650,8 @@ Let's begin with our first question: ${config.questions[0]}`,
     return ((currentQuestion + 1) / config.questions.length) * 100
   }
 
-  // Microphone Permission Modal
-  const renderPermissionModal = () => {
-    if (!showPermissionModal) return null;
-    
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <Card className="p-6 max-w-md mx-4 bg-white dark:bg-gray-800">
-          <div className="text-center space-y-4">
-            <Mic className="w-12 h-12 text-blue-500 mx-auto" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Microphone Access Required
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              This assessment requires microphone access for voice transcription. 
-              Please allow microphone access to continue with full functionality.
-            </p>
-            {microphoneError && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                <p className="text-sm text-red-700 dark:text-red-300">{microphoneError}</p>
-              </div>
-            )}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button 
-                onClick={requestMicrophonePermission}
-                className="flex-1"
-              >
-                <Mic className="mr-2 h-4 w-4" />
-                Allow Microphone
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setShowPermissionModal(false);
-                  setMicrophonePermission('denied');
-                }}
-                className="flex-1"
-              >
-                Continue Without Voice
-              </Button>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              You can still complete the assessment using text input if you choose not to allow microphone access.
-            </p>
-          </div>
-        </Card>
-      </div>
-    );
-  };
-
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col relative">
-      {/* Microphone Permission Modal */}
-      {renderPermissionModal()}
-      
       {/* Floating Video Monitor */}
       <FloatingVideoMonitor
         onSecurityAlert={handleSecurityAlert}
@@ -923,9 +790,6 @@ Let's begin with our first question: ${config.questions[0]}`,
                     {!speechRecognitionSupported && (
                       <p className="text-orange-600">• Voice transcription not supported in this browser</p>
                     )}
-                    {microphonePermission === 'denied' && (
-                      <p className="text-orange-600">• Microphone access denied - using text input only</p>
-                    )}
                   </div>
                   <Button onClick={startAssessment} className="w-full" disabled={isAssessmentTerminated}>
                     <Shield className="w-4 h-4 mr-2" />
@@ -1027,7 +891,7 @@ Let's begin with our first question: ${config.questions[0]}`,
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={toggleTranscription}
+                  onClick={toggleMute}
                   className="text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800"
                 >
                   Stop
@@ -1084,48 +948,16 @@ Let's begin with our first question: ${config.questions[0]}`,
 
             <div className="flex items-end space-x-3">
               {/* Audio Controls */}
-              <div className="flex space-x-2">
-                <Button
-                  size="sm"
-                  variant={isMuted ? "destructive" : "secondary"}
-                  onClick={toggleMute}
-                  className="rounded-full w-10 h-10 p-0"
-                  disabled={isAIReading || microphonePermission !== 'granted'}
-                  title={microphonePermission !== 'granted' ? "Microphone access denied" : isMuted ? "Unmute microphone" : "Mute microphone"}
-                >
-                  {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </Button>
-
-                <Button
-                  size="sm"
-                  variant={isTranscribing ? "primary" : "outline"}
-                  onClick={toggleTranscription}
-                  className={`rounded-full w-10 h-10 p-0 transition-all duration-200 ${
-                    isTranscribing
-                      ? "bg-red-500 hover:bg-red-600 border-red-500 shadow-lg"
-                      : "hover:bg-blue-50 dark:hover:bg-blue-900"
-                  }`}
-                  disabled={isAIReading || !canUserRespond || !speechRecognitionSupported || microphonePermission !== 'granted'}
-                  title={
-                    !speechRecognitionSupported
-                      ? "Voice transcription not supported"
-                      : microphonePermission !== 'granted'
-                      ? "Microphone access denied"
-                      : isTranscribing
-                        ? "Stop voice transcription"
-                        : "Start voice transcription"
-                  }
-                >
-                  {isTranscribing ? (
-                    <div className="relative">
-                      <div className="w-4 h-4 bg-white rounded-full animate-pulse" />
-                      <div className="absolute inset-0 w-4 h-4 border-2 border-white rounded-full animate-ping" />
-                    </div>
-                  ) : (
-                    <Mic className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
+              <Button
+                size="sm"
+                variant={isMuted ? "destructive" : "secondary"}
+                onClick={toggleMute}
+                className="rounded-full w-10 h-10 p-0"
+                disabled={isAIReading}
+                title={isMuted ? "Unmute microphone" : "Mute microphone"}
+              >
+                {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </Button>
 
               {/* Text Input */}
               <div className="flex-1">

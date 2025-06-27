@@ -114,7 +114,7 @@ export function SessionTerminatedModal({
           <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
             <li>• This incident will be recorded in your candidate report</li>
             <li>• The recruiter will be notified of the session termination</li>
-            <li>• You may retake the session, but this attempt will remain on record</li>
+            <li>• You may retake the session if the job allows it, but this attempt will remain on record</li>
             <li>• Multiple violations may affect your application status</li>
           </ul>
         </div>

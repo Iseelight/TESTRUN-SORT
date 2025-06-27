@@ -35,6 +35,7 @@ export interface JobPosting {
   recruiterId: string
   selectedCandidates: number
   rejectedCandidates: number
+  allowRetake: boolean
 }
 
 export interface Candidate {
@@ -134,6 +135,7 @@ export interface AssessmentConfig {
   enableScreenLock: boolean
   enableAudioRecording: boolean
   maxViolations: number
+  allowRetake?: boolean
 }
 
 export interface AssessmentResult {
