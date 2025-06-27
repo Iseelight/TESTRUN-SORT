@@ -9,12 +9,7 @@ interface FloatingVideoMonitorProps {
   onFaceAwayViolation: () => void;
 }
 
-export function FloatingVideoMonitor({ 
-  onSecurityAlert, 
-  onFaceDetectionUpdate, 
-  isActive, 
-  onFaceAwayViolation 
-}: FloatingVideoMonitorProps) {
+export function FloatingVideoMonitor({ onSecurityAlert, onFaceDetectionUpdate, isActive, onFaceAwayViolation }: FloatingVideoMonitorProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -148,7 +143,7 @@ export function FloatingVideoMonitor({
     }
   }, [isVideoEnabled, isMinimized]);
 
-  // Enhanced face detection with persistent alerts - Updated to 30 seconds
+  // Enhanced face detection with persistent alerts
   const detectFaces = useCallback(() => {
     if (!videoRef.current || !canvasRef.current || !isVideoEnabled || videoRef.current.videoWidth === 0) {
       return;
@@ -313,7 +308,7 @@ export function FloatingVideoMonitor({
       setFaceDetectionData(detectionData);
       onFaceDetectionUpdate(detectionData);
 
-      // Enhanced security monitoring with persistent alerts and countdown - Updated to 30 seconds
+      // Enhanced security monitoring with persistent alerts and countdown
       const currentTime = Date.now();
       
       if (!faceDetected) {
@@ -324,7 +319,7 @@ export function FloatingVideoMonitor({
           playAlertTone();
         }
         
-        // Calculate countdown - how many seconds left until violation (30 seconds)
+        // Calculate countdown - how many seconds left until violation
         const timeAway = currentTime - awayStartTime;
         const secondsLeft = Math.max(0, 30 - Math.floor(timeAway / 1000));
         setCountdownSeconds(secondsLeft);

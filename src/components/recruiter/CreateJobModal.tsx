@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Wand2, Share2, Copy, Check, Info, FileText } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Card } from '../ui/card';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
 import { useJobs } from '../../contexts/JobContext';
 
 interface CreateJobModalProps {
@@ -83,8 +83,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
     enable_waitlist: false,
     waitlist_duration: 7,
     waitlist_message: 'You have successfully passed our assessment benchmark and demonstrated the qualifications we are looking for in this role. Due to the high volume of qualified applicants, you have been placed on our priority waitlist. Interview qualification results will be announced within the next 7 days. We appreciate your patience and will keep you updated on your application status.',
-    suggested_questions: [''],
-    allow_retake: true
+    suggested_questions: ['']
   });
 
   if (!isOpen) return null;
@@ -204,8 +203,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
       enable_waitlist: formData.enable_waitlist,
       waitlist_duration: formData.waitlist_duration,
       waitlist_message: formData.waitlist_message,
-      suggested_questions: formData.suggested_questions.filter(q => q.trim() !== ''),
-      allow_retake: formData.allow_retake
+      suggested_questions: formData.suggested_questions.filter(q => q.trim() !== '')
     };
     
     try {
@@ -237,8 +235,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
         enable_waitlist: false,
         waitlist_duration: 7,
         waitlist_message: 'You have successfully passed our assessment benchmark and demonstrated the qualifications we are looking for in this role. Due to the high volume of qualified applicants, you have been placed on our priority waitlist. Interview qualification results will be announced within the next 7 days. We appreciate your patience and will keep you updated on your application status.',
-        suggested_questions: [''],
-        allow_retake: true
+        suggested_questions: ['']
       });
     } catch (error) {
       console.error('Failed to create job:', error);
@@ -273,14 +270,14 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
           <X size={20} />
         </button>
 
-        <div className="mb-6 p-6">
+        <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Create New Job</h2>
           <p className="text-gray-600 dark:text-gray-400">
             Fill out the details below to create a new job posting
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 p-6 pt-0">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="grid md:grid-cols-2 gap-4">
             <div>
@@ -618,32 +615,6 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
                 onChange={(e) => handleInputChange('active_days', Number(e.target.value))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
-            </div>
-          </div>
-
-          {/* Assessment Settings */}
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Assessment Settings</h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="allowRetake"
-                  checked={formData.allow_retake}
-                  onChange={(e) => handleInputChange('allow_retake', e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="allowRetake" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Allow candidates to retake assessment if terminated
-                </label>
-                <div className="group relative">
-                  <Info size={16} className="text-gray-400 cursor-help" />
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    If enabled, candidates can retry the assessment once if it was terminated due to violations
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
 

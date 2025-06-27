@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'rea
 import { RecruiterDashboard } from './pages/RecruiterDashboard';
 import { EnhancedCandidateApplication } from './pages/EnhancedCandidateApplication';
 import { LoginModal } from './components/auth/LoginModal';
-import { Button } from './components/ui/button';
+import { Button } from './components/ui/Button';
 import { Header } from './components/layout/Header';
 import { Brain, Users, Briefcase, Camera, Shield, Eye } from 'lucide-react';
 import { AuthProvider } from './contexts/AuthContext';

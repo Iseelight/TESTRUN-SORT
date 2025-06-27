@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Users, Briefcase, BarChart3, CheckCircle, XCircle, Clock, AlertCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Users, Briefcase, BarChart3, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { CandidateCard } from '../components/recruiter/CandidateCard';
 import { FilterPanel } from '../components/recruiter/FilterPanel';
 import { JobPostingCard } from '../components/recruiter/JobPostingCard';
 import { CreateJobModal } from '../components/recruiter/CreateJobModal';
 import { LoginModal } from '../components/auth/LoginModal';
-import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
 import { useAuth } from '../contexts/AuthContext';
 import { useJobs } from '../contexts/JobContext';
 
@@ -18,127 +18,18 @@ interface RecruiterDashboardProps {
 
 type DashboardView = 'overview' | 'jobs' | 'candidates' | 'analytics';
 
-// Mock data for testing without backend
-const MOCK_JOBS = [
-  {
-    id: 'job_1',
-    title: 'Senior Frontend Developer',
-    company: 'SortFast Inc.',
-    description: 'We are looking for an experienced Frontend Developer...',
-    requirements: ['5+ years React', 'TypeScript', 'Modern CSS'],
-    location: 'San Francisco, CA',
-    employment_type: 'Full-time',
-    salary_min: 120000,
-    salary_max: 180000,
-    salary_currency: 'USD',
-    skillWeights: { technical: 40, soft: 25, leadership: 20, communication: 15 },
-    cutoffPercentage: 75,
-    maxCandidates: 50,
-    status: 'active',
-    total_applications: 12,
-    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString()
-  },
-  {
-    id: 'job_2',
-    title: 'Product Manager',
-    company: 'SortFast Inc.',
-    description: 'Join our product team to drive strategy and execution...',
-    requirements: ['3+ years product management', 'Technical background', 'Data-driven'],
-    location: 'Remote',
-    employment_type: 'Full-time',
-    salary_min: 100000,
-    salary_max: 150000,
-    salary_currency: 'USD',
-    skillWeights: { technical: 25, soft: 30, leadership: 30, communication: 15 },
-    cutoffPercentage: 70,
-    maxCandidates: 30,
-    status: 'active',
-    total_applications: 8,
-    expires_at: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString()
-  },
-  {
-    id: 'job_3',
-    title: 'UX/UI Designer',
-    company: 'SortFast Inc.',
-    description: 'We are seeking a talented UX/UI Designer...',
-    requirements: ['Portfolio', 'Figma', 'User-centered design'],
-    location: 'New York, NY',
-    employment_type: 'Full-time',
-    salary_min: 90000,
-    salary_max: 130000,
-    salary_currency: 'USD',
-    skillWeights: { technical: 35, soft: 25, leadership: 15, communication: 25 },
-    cutoffPercentage: 70,
-    maxCandidates: 25,
-    status: 'active',
-    total_applications: 5,
-    expires_at: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString()
-  }
-];
-
-const MOCK_CANDIDATES = [
-  {
-    id: 'candidate_1',
-    name: 'John Smith',
-    email: 'john.smith@example.com',
-    phone: '+1 (555) 123-4567',
-    location: 'San Francisco, CA',
-    scores: { overall: 85, technical: 88, soft: 82, leadership: 80, communication: 90 },
-    status: 'pending',
-    applied_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    job_id: 'job_1'
-  },
-  {
-    id: 'candidate_2',
-    name: 'Emily Johnson',
-    email: 'emily.johnson@example.com',
-    phone: '+1 (555) 987-6543',
-    location: 'New York, NY',
-    scores: { overall: 92, technical: 95, soft: 90, leadership: 88, communication: 94 },
-    status: 'selected',
-    applied_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    job_id: 'job_1'
-  },
-  {
-    id: 'candidate_3',
-    name: 'Michael Chen',
-    email: 'michael.chen@example.com',
-    phone: '+1 (555) 456-7890',
-    location: 'Remote',
-    scores: { overall: 78, technical: 82, soft: 75, leadership: 70, communication: 85 },
-    status: 'rejected',
-    applied_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    job_id: 'job_2'
-  },
-  {
-    id: 'candidate_4',
-    name: 'Sarah Williams',
-    email: 'sarah.williams@example.com',
-    phone: '+1 (555) 234-5678',
-    location: 'Chicago, IL',
-    scores: { overall: 88, technical: 85, soft: 92, leadership: 90, communication: 86 },
-    status: 'pending',
-    applied_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    job_id: 'job_2'
-  },
-  {
-    id: 'candidate_5',
-    name: 'David Rodriguez',
-    email: 'david.rodriguez@example.com',
-    phone: '+1 (555) 876-5432',
-    location: 'Austin, TX',
-    scores: { overall: 81, technical: 84, soft: 78, leadership: 75, communication: 88 },
-    status: 'waitlisted',
-    applied_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    job_id: 'job_3'
-  }
-];
-
 export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
   const { user } = useAuth();
+  const { 
+    jobs, 
+    candidates, 
+    fetchMyJobs,
+    fetchCandidatesByJob,
+    selectCandidate, 
+    rejectCandidate,
+    isLoading,
+    error
+  } = useJobs();
   const [view, setView] = useState<DashboardView>('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [minScore, setMinScore] = useState(0);
@@ -148,11 +39,6 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
   const [showCreateJobModal, setShowCreateJobModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
-  const [jobs, setJobs] = useState(MOCK_JOBS);
-  const [candidates, setCandidates] = useState(MOCK_CANDIDATES);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
 
   // Check if user is trying to access with candidate account
   useEffect(() => {
@@ -163,21 +49,12 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
     }
   }, [user]);
 
-  // Check for expired jobs and update their status
+  // Fetch recruiter's jobs when user is available
   useEffect(() => {
-    const now = new Date();
-    const updatedJobs = jobs.map(job => {
-      const expiryDate = new Date(job.expires_at);
-      if (expiryDate < now && job.status === 'active') {
-        return { ...job, status: 'inactive' };
-      }
-      return job;
-    });
-    
-    if (JSON.stringify(updatedJobs) !== JSON.stringify(jobs)) {
-      setJobs(updatedJobs);
+    if (user && user.role === 'recruiter') {
+      fetchMyJobs();
     }
-  }, [jobs]);
+  }, [user, fetchMyJobs]);
 
   // Show login modal if not authenticated
   if (!user) {
@@ -260,12 +137,6 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
     return matchesSearch && matchesScore && matchesLocation && matchesStatus && matchesJob;
   });
 
-  // Pagination for candidates
-  const indexOfLastCandidate = currentPage * itemsPerPage;
-  const indexOfFirstCandidate = indexOfLastCandidate - itemsPerPage;
-  const currentCandidates = filteredCandidates.slice(indexOfFirstCandidate, indexOfLastCandidate);
-  const totalCandidatePages = Math.ceil(filteredCandidates.length / itemsPerPage);
-
   const resetFilters = () => {
     setSearchTerm('');
     setMinScore(0);
@@ -291,10 +162,7 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
 
   const handleSelectCandidate = async (candidateId: string) => {
     try {
-      // Update candidate status in mock data
-      setCandidates(prev => prev.map(c => 
-        c.id === candidateId ? {...c, status: 'selected'} : c
-      ));
+      await selectCandidate(candidateId);
     } catch (error) {
       console.error('Failed to select candidate:', error);
     }
@@ -303,10 +171,7 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
   const handleRejectCandidate = async (candidateId: string) => {
     const reason = prompt('Please provide a reason for rejection (optional):');
     try {
-      // Update candidate status in mock data
-      setCandidates(prev => prev.map(c => 
-        c.id === candidateId ? {...c, status: 'rejected'} : c
-      ));
+      await rejectCandidate(candidateId, reason || undefined);
     } catch (error) {
       console.error('Failed to reject candidate:', error);
     }
@@ -315,30 +180,30 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
   const handleViewCandidates = async (jobId: string) => {
     setSelectedJob(jobId);
     setView('candidates');
-    // Reset pagination when changing job filter
-    setCurrentPage(1);
-  };
-
-  const handleCreateJob = (jobData: any) => {
-    const newJob = {
-      id: 'job_' + Date.now(),
-      ...jobData,
-      status: 'active',
-      total_applications: 0,
-      expires_at: new Date(Date.now() + jobData.active_days * 24 * 60 * 60 * 1000).toISOString(),
-      created_at: new Date().toISOString()
-    };
-    
-    setJobs(prev => [...prev, newJob]);
-  };
-
-  const handleRemoveJob = (jobId: string) => {
-    // Remove job and its candidates
-    setJobs(prev => prev.filter(job => job.id !== jobId));
-    setCandidates(prev => prev.filter(candidate => candidate.job_id !== jobId));
+    await fetchCandidatesByJob(jobId);
   };
 
   const statusCounts = getStatusCounts();
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <Header userType="recruiter" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+          <Card>
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Error</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -456,19 +321,9 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                           <h3 className="font-medium text-gray-900 dark:text-white">{job.title}</h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400">{getCandidateCount(job.id)} candidates</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={job.status === 'active' ? 'success' : job.status === 'inactive' ? 'warning' : 'error'}>
-                            {job.status}
-                          </Badge>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRemoveJob(job.id)}
-                            className="p-1"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
+                        <Badge variant={job.status === 'active' ? 'success' : job.status === 'inactive' ? 'warning' : 'error'}>
+                          {job.status}
+                        </Badge>
                       </div>
                     ))}
                   </div>
@@ -562,22 +417,13 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
             ) : (
               <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {jobs.map(job => (
-                  <div key={job.id} className="relative">
-                    <JobPostingCard
-                      job={job}
-                      candidateCount={getCandidateCount(job.id)}
-                      onViewCandidates={handleViewCandidates}
-                      onEditJob={(jobId) => console.log('Edit job:', jobId)}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveJob(job.id)}
-                      className="absolute top-4 right-4 p-1"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
+                  <JobPostingCard
+                    key={job.id}
+                    job={job}
+                    candidateCount={getCandidateCount(job.id)}
+                    onViewCandidates={handleViewCandidates}
+                    onEditJob={(jobId) => console.log('Edit job:', jobId)}
+                  />
                 ))}
               </div>
             )}
@@ -608,10 +454,7 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                     <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Filter by Job</h4>
                     <select
                       value={selectedJob}
-                      onChange={(e) => {
-                        setSelectedJob(e.target.value);
-                        setCurrentPage(1); // Reset pagination when changing filter
-                      }}
+                      onChange={(e) => setSelectedJob(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       <option value="">All Jobs</option>
@@ -658,77 +501,38 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                     </div>
                   </Card>
                 ) : (
-                  <>
-                    <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {currentCandidates.map(candidate => (
-                        <div key={candidate.id} className="relative">
-                          <CandidateCard
-                            candidate={candidate}
-                            onViewProfile={(candidateId) => console.log('View profile:', candidateId)}
-                            onViewConversation={(candidateId) => console.log('View conversation:', candidateId)}
-                          />
-                          {candidate.status === 'pending' && (
-                            <div className="absolute top-4 right-4 flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => handleSelectCandidate(candidate.id)}
-                                className="px-3 py-1"
-                              >
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Select
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRejectCandidate(candidate.id)}
-                                className="px-3 py-1"
-                              >
-                                <XCircle className="mr-2 h-4 w-4" />
-                                Reject
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Pagination */}
-                    {totalCandidatePages > 1 && (
-                      <div className="flex justify-center mt-8">
-                        <div className="flex items-center space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                          >
-                            Previous
-                          </Button>
-                          
-                          {Array.from({ length: totalCandidatePages }, (_, i) => i + 1).map(page => (
+                  <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {filteredCandidates.map(candidate => (
+                      <div key={candidate.id} className="relative">
+                        <CandidateCard
+                          candidate={candidate}
+                          onViewProfile={(candidateId) => console.log('View profile:', candidateId)}
+                          onViewConversation={(candidateId) => console.log('View conversation:', candidateId)}
+                        />
+                        {candidate.status === 'pending' && (
+                          <div className="absolute top-4 right-4 flex gap-2">
                             <Button
-                              key={page}
-                              variant={currentPage === page ? "default" : "outline"}
                               size="sm"
-                              onClick={() => setCurrentPage(page)}
-                              className="w-8 h-8 p-0"
+                              onClick={() => handleSelectCandidate(candidate.id)}
+                              className="px-3 py-1"
                             >
-                              {page}
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              Select
                             </Button>
-                          ))}
-                          
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalCandidatePages))}
-                            disabled={currentPage === totalCandidatePages}
-                          >
-                            Next
-                          </Button>
-                        </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRejectCandidate(candidate.id)}
+                              className="px-3 py-1"
+                            >
+                              <XCircle className="mr-2 h-4 w-4" />
+                              Reject
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Settings, LogOut, Moon, Sun, User, ChevronDown, Briefcase } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Settings, LogOut, Moon, Sun, User, ChevronDown } from 'lucide-react';
+import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -26,6 +26,11 @@ export function Header({ userType }: HeaderProps) {
             <div className="relative">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                 <Briefcase className="w-6 h-6 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-navy-blue rounded-full flex items-center justify-center">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
+                  <path d="M13 7L17 11L13 15M7 17L3 13L7 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </div>
             </div>
             <div>

@@ -25,9 +25,6 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
   const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Initialize audio automatically
-    startAudio();
-    
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -47,7 +44,23 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
     };
   }, [audioUrl]);
 
-  const startAudio = async () => {
+  const monitorAudioLevel = () => {
+    if (!analyserRef.current) return;
+    
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getByteFrequencyData(dataArray);
+    
+    const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+    const normalizedLevel = Math.min(average / 128, 1);
+    
+    setAudioLevel(normalizedLevel);
+    
+    if (isRecording) {
+      animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
+    }
+  };
+
+  const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
@@ -65,67 +78,29 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
       source.connect(analyserRef.current);
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      // Continue without showing error
-    }
-  };
-
-  const monitorAudioLevel = () => {
-    if (!analyserRef.current) return;
-    
-    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-    analyserRef.current.getByteFrequencyData(dataArray);
-    
-    const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-    const normalizedLevel = Math.min(average / 128, 1);
-    
-    setAudioLevel(normalizedLevel);
-    
-    if (isRecording) {
-      animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
-    }
-  };
-
-  const toggleRecording = async () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      await startRecording();
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      // If we don't have a stream yet, try to get one
-      if (!streamRef.current) {
-        await startAudio();
-      }
       
-      if (!streamRef.current) {
-        console.error('No audio stream available');
-        return;
-      }
-      
-      const mediaRecorder = new MediaRecorder(streamRef.current);
+      // Start audio level monitoring
+      monitorAudioLevel();
+
+      const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
 
       const chunks: BlobPart[] = [];
-      audioChunksRef.current = [];
-      
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+          chunks.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const blob = new Blob(chunks, { type: 'audio/wav' });
         setAudioBlob(blob);
         const url = URL.createObjectURL(blob);
         setAudioUrl(url);
         
-        // Stop audio level monitoring
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
+        
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
         }
@@ -137,16 +112,14 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
       setIsRecording(true);
       setRecordingTime(0);
 
-      // Start audio level monitoring
-      monitorAudioLevel();
-
       // Start timer
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
 
     } catch (error) {
-      console.error('Error starting recording:', error);
+      console.error('Error accessing microphone:', error);
+      alert('Unable to access microphone. Please check your permissions.');
     }
   };
 
@@ -158,6 +131,14 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
+      }
+      
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(console.error);
       }
     }
   };
@@ -244,15 +225,28 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
       )}
 
       <div className="flex items-center gap-2">
-        <Button
-          onClick={toggleRecording}
-          disabled={isDisabled || isProcessing}
-          variant={isRecording ? "destructive" : "outline"}
-          size="sm"
-        >
-          {isRecording ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
-          {isRecording ? 'Stop Recording' : 'Start Recording'}
-        </Button>
+        {!isRecording && !audioBlob && (
+          <Button
+            onClick={startRecording}
+            disabled={isDisabled}
+            variant="outline"
+            size="sm"
+          >
+            <Mic className="mr-2 h-4 w-4" />
+            Start Recording
+          </Button>
+        )}
+
+        {isRecording && (
+          <Button
+            onClick={stopRecording}
+            variant="destructive"
+            size="sm"
+          >
+            <MicOff className="mr-2 h-4 w-4" />
+            Stop Recording
+          </Button>
+        )}
 
         {audioBlob && !isRecording && (
           <>
