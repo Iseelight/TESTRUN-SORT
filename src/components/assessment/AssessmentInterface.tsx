@@ -5,7 +5,7 @@ import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Mic, MicOff, Play, Pause, RotateCcw, AlertTriangle, Settings } from 'lucide-react';
 import { AssessmentTimer } from './AssessmentTimer';
-import { FloatingVideoMonitor } from './FloatingVideoMonitor';
+import { FloatingVideoMonitor } from '../ui/floating-video-monitor';
 
 interface Question {
   id: string;
@@ -14,17 +14,35 @@ interface Question {
   type: 'audio' | 'video';
 }
 
+interface AssessmentConfig {
+  duration: number;
+  questions: string[];
+  enableFaceDetection: boolean;
+  enableScreenLock: boolean;
+  enableAudioRecording: boolean;
+  maxViolations: number;
+  allowRetake: boolean;
+}
+
 interface AssessmentInterfaceProps {
-  questions: Question[];
-  onComplete: (responses: any[]) => void;
+  config: AssessmentConfig;
+  onAssessmentComplete: (result: any) => void;
   onTerminate?: () => void;
 }
 
 export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
-  questions,
-  onComplete,
+  config,
+  onAssessmentComplete,
   onTerminate
 }) => {
+  // Transform string questions into Question objects
+  const questions: Question[] = config.questions.map((questionText, index) => ({
+    id: `question_${index + 1}`,
+    text: questionText,
+    timeLimit: Math.floor(config.duration * 60 / config.questions.length), // Distribute time evenly
+    type: 'audio' as const
+  }));
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -245,7 +263,17 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      onComplete(newResponses);
+      // Complete assessment
+      const assessmentResult = {
+        questionsAnswered: newResponses.length,
+        totalQuestions: questions.length,
+        duration: config.duration,
+        securityAlertsCount: 0,
+        securityAlerts: [],
+        responses: newResponses,
+        terminationReason: null
+      };
+      onAssessmentComplete(assessmentResult);
     }
   };
 
