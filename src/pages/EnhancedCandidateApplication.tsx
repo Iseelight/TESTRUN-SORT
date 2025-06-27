@@ -7,9 +7,9 @@ import { AssessmentInterface } from '../components/assessment/AssessmentInterfac
 import { ResultsPage } from '../components/candidate/ResultsPage';
 import { SessionTerminatedModal } from '../components/candidate/SessionTerminatedModal';
 import { LoginModal } from '../components/auth/LoginModal';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/button';
+import { Card } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import { AssessmentConfig, AssessmentResult } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { MockBackendService } from '../components/candidate/MockBackendService';
