@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Brain, Settings, LogOut, Moon, Sun, User, ChevronDown } from 'lucide-react';
+import { Briefcase, Settings, LogOut, Moon, Sun, User, ChevronDown, Zap } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -24,10 +24,13 @@ export function Header({ userType }: HeaderProps) {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <Brain className="w-6 h-6 text-white" />
+              <div className="relative">
+                <Briefcase className="w-6 h-6 text-white" />
+                <Zap className="w-3 h-3 text-white absolute -top-1 -right-1" />
+              </div>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">RecruitAI</h1>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">SortFast</h1>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {userType === 'recruiter' ? 'Recruiter Dashboard' : 
                  userType === 'candidate' ? 'Candidate Portal' : 
@@ -101,8 +104,9 @@ export function Header({ userType }: HeaderProps) {
                 variant="ghost"
                 size="sm"
                 onClick={toggleTheme}
-                icon={theme === 'light' ? Moon : Sun}
-              />
+              >
+                {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+              </Button>
             )}
           </div>
         </div>

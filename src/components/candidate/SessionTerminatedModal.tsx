@@ -56,7 +56,7 @@ export function SessionTerminatedModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl">
+      <Card className="w-full max-w-2xl bg-white dark:bg-gray-800">
         <div className="text-center mb-6">
           <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertTriangle className="w-10 h-10 text-red-600 dark:text-red-400" />

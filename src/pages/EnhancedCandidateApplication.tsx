@@ -8,7 +8,7 @@ import { ResultsPage } from '../components/candidate/ResultsPage';
 import { SessionTerminatedModal } from '../components/candidate/SessionTerminatedModal';
 import { LoginModal } from '../components/auth/LoginModal';
 import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card.tsx';
+import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { ConversationMessage, AssessmentConfig, AssessmentResult } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -214,10 +214,10 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
       const adjustedScore = Math.max(0, Math.min(100, baseScore + completionBonus + timeBonus - securityPenalty));
       
       // Calculate weighted scores based on job skill weights
-      const technicalScore = Math.round(Math.max(0, Math.min(100, adjustedScore + (Math.random() - 0.3) * 15)));
-      const softScore = Math.round(Math.max(0, Math.min(100, adjustedScore + (Math.random() - 0.2) * 12)));
-      const leadershipScore = Math.round(Math.max(0, Math.min(100, adjustedScore + (Math.random() - 0.4) * 20)));
-      const communicationScore = Math.round(Math.max(0, Math.min(100, adjustedScore + (Math.random() - 0.1) * 8)));
+      const technicalScore = Math.round(Math.max(0, Math.min(100, adjustedScore + (Math.random() - 0.5) * 20)));
+      const softScore = Math.round(Math.max(0, Math.min(100, adjustedScore + (Math.random() - 0.5) * 15)));
+      const leadershipScore = Math.round(Math.max(0, Math.min(100, adjustedScore + (Math.random() - 0.5) * 25)));
+      const communicationScore = Math.round(Math.max(0, Math.min(100, adjustedScore + (Math.random() - 0.5) * 10)));
       
       // Calculate overall score using job's skill weights
       const overallScore = Math.round(
@@ -225,7 +225,6 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
          softScore * job.skill_weights.soft +
          leadershipScore * job.skill_weights.leadership +
          communicationScore * job.skill_weights.communication) / 100
-      
       );
       
       // Determine initial status based on score and job settings
@@ -362,20 +361,24 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
           {/* Progress indicator */}
           <div className="flex items-center justify-center mb-8">
             <div className="flex items-center space-x-2 sm:space-x-4">
-              {['jobs', 'application', 'cv-analysis', 'assessment', 'results'].map((stepName, index) => {
-                const isActive = step === stepName;
+              {[
+                { step: 'jobs', icon: <Briefcase className="w-4 h-4" /> },
+                { step: 'application', icon: <FileText className="w-4 h-4" /> },
+                { step: 'cv-analysis', icon: <FileText className="w-4 h-4" /> },
+                { step: 'assessment', icon: <Camera className="w-4 h-4" /> },
+                { step: 'results', icon: <CheckCircle className="w-4 h-4" /> }
+              ].map((item, index) => {
+                const isActive = step === item.step;
                 const isCompleted = ['jobs', 'application', 'cv-analysis', 'assessment', 'results'].indexOf(step) > index;
                 
                 return (
-                  <React.Fragment key={stepName}>
+                  <React.Fragment key={item.step}>
                     <div className={`
                       w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-base font-medium
                       ${isActive ? 'bg-blue-600 text-white' : 
                         isCompleted ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}
                     `}>
-                      {stepName === 'assessment' && <Camera size={16} />}
-                      {stepName === 'cv-analysis' && <FileText size={16} />}
-                      {stepName !== 'assessment' && stepName !== 'cv-analysis' && (index + 1)}
+                      {item.icon}
                     </div>
                     {index < 4 && (
                       <div className={`
@@ -407,7 +410,7 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
                 const daysLeft = Math.ceil((new Date(job.expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                 
                 return (
-                  <Card key={job.id} hover className="h-full">
+                  <Card key={job.id} className="h-full">
                     <div className="flex flex-col h-full">
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1 pr-4">
@@ -418,7 +421,7 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
                           </div>
                         </div>
                         <div className="flex flex-col gap-2">
-                          <Badge variant="info">{job.employment_type}</Badge>
+                          <Badge variant="secondary">{job.employment_type}</Badge>
                           <Badge variant="warning" className="flex items-center gap-1">
                             <Shield size={12} />
                             Secure Assessment

@@ -81,7 +81,7 @@ export function LoginModal({ isOpen, onClose, userType }: LoginModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md relative max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-md relative max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
