@@ -11,6 +11,7 @@ import {
   Wifi,
   WifiOff,
   CheckCircle,
+  AlertCircle,
 } from "lucide-react"
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -59,6 +60,8 @@ export function AssessmentInterface({
   // Audio States
   const [isMuted, setIsMuted] = useState(true) // Start muted
   const [audioLevel, setAudioLevel] = useState(0)
+  const [microphonePermissionDenied, setMicrophonePermissionDenied] = useState(false)
+  const [microphoneError, setMicrophoneError] = useState<string | null>(null)
 
   // Assessment States
   const [isAssessmentActive, setIsAssessmentActive] = useState(false)
@@ -162,12 +165,16 @@ export function AssessmentInterface({
     }
   }, [faceWarningCount, messages, currentQuestion, securityAlerts, assessmentStartTime, config.questions.length, onAssessmentComplete])
 
-  // Initialize microphone
+  // Initialize microphone with proper error handling
   useEffect(() => {
     let analyser: AnalyserNode | null = null
 
     const initializeAudio = async () => {
       try {
+        setConnectionStatus("connecting")
+        setMicrophoneError(null)
+        setMicrophonePermissionDenied(false)
+
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
@@ -203,8 +210,37 @@ export function AssessmentInterface({
         })
 
         setConnectionStatus("connected")
+        console.log("Microphone initialized successfully")
       } catch (error) {
         console.error("Error accessing microphone:", error)
+        
+        // Handle different types of microphone errors
+        if (error instanceof DOMException) {
+          switch (error.name) {
+            case "NotAllowedError":
+              setMicrophonePermissionDenied(true)
+              setMicrophoneError("Microphone access denied. Please allow microphone permissions in your browser settings.")
+              break
+            case "NotFoundError":
+              setMicrophoneError("No microphone found. Please connect a microphone and refresh the page.")
+              break
+            case "NotReadableError":
+              setMicrophoneError("Microphone is being used by another application. Please close other applications and refresh.")
+              break
+            case "OverconstrainedError":
+              setMicrophoneError("Microphone constraints could not be satisfied. Please try with a different microphone.")
+              break
+            case "SecurityError":
+              setMicrophonePermissionDenied(true)
+              setMicrophoneError("Microphone access blocked by security settings. Please check your browser and system permissions.")
+              break
+            default:
+              setMicrophoneError(`Microphone error: ${error.message}`)
+          }
+        } else {
+          setMicrophoneError("Unknown microphone error occurred. Please refresh and try again.")
+        }
+        
         setConnectionStatus("disconnected")
       }
     }
@@ -510,7 +546,7 @@ export function AssessmentInterface({
           console.log("Timer started after first question")
         }
 
-        if (isMuted) {
+        if (isMuted && !microphonePermissionDenied) {
           setIsMuted(false)
           if (streamRef.current) {
             const audioTracks = streamRef.current.getAudioTracks()
@@ -520,8 +556,8 @@ export function AssessmentInterface({
           }
         }
         
-        // Auto-start speech recognition when AI finishes speaking
-        if (speechRecognitionSupported && !isTranscribing) {
+        // Auto-start speech recognition when AI finishes speaking (only if microphone is available)
+        if (speechRecognitionSupported && !isTranscribing && !microphonePermissionDenied) {
           startSpeechRecognition()
         }
       }
@@ -539,7 +575,7 @@ export function AssessmentInterface({
   }
 
   const toggleMute = () => {
-    if (isAIReading) return
+    if (isAIReading || microphonePermissionDenied) return
 
     setIsMuted(!isMuted)
     if (streamRef.current) {
@@ -562,7 +598,7 @@ export function AssessmentInterface({
   }
 
   const toggleTranscription = () => {
-    if (isAIReading || !speechRecognitionSupported) return
+    if (isAIReading || !speechRecognitionSupported || microphonePermissionDenied) return
 
     if (isTranscribing) {
       stopSpeechRecognition()
@@ -570,6 +606,32 @@ export function AssessmentInterface({
       if (canUserRespond && !isAIReading) {
         startSpeechRecognition()
       }
+    }
+  }
+
+  const requestMicrophonePermission = async () => {
+    try {
+      setConnectionStatus("connecting")
+      setMicrophoneError(null)
+      setMicrophonePermissionDenied(false)
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      })
+
+      // If we get here, permission was granted
+      stream.getTracks().forEach(track => track.stop()) // Stop the test stream
+      window.location.reload() // Reload to reinitialize everything properly
+    } catch (error) {
+      console.error("Failed to get microphone permission:", error)
+      if (error instanceof DOMException && error.name === "NotAllowedError") {
+        setMicrophoneError("Permission still denied. Please manually enable microphone access in your browser settings.")
+      }
+      setConnectionStatus("disconnected")
     }
   }
 
@@ -586,6 +648,8 @@ export function AssessmentInterface({
       content: `Welcome to your AI interview assessment. I'm your AI interviewer today. We have ${config.duration} minutes for ${config.questions.length} questions. 
 
 Please ensure your camera and microphone are working properly. Keep your face aligned with the silhouette guide. You can respond using voice (which will be transcribed automatically) or by typing your responses.
+
+${microphonePermissionDenied ? "Note: Microphone access is currently denied, so you'll need to type your responses. You can enable microphone access in your browser settings if you'd like to use voice input." : ""}
 
 I will read each question aloud. Please wait for me to finish before responding. The timer will start after I finish reading the first question.
 
@@ -624,12 +688,14 @@ Let's begin with our first question: ${config.questions[0]}`,
     setIsAITyping(true)
     setCanUserRespond(false)
 
-    setIsMuted(true)
-    if (streamRef.current) {
-      const audioTracks = streamRef.current.getAudioTracks()
-      audioTracks.forEach((track) => {
-        track.enabled = false
-      })
+    if (!microphonePermissionDenied) {
+      setIsMuted(true)
+      if (streamRef.current) {
+        const audioTracks = streamRef.current.getAudioTracks()
+        audioTracks.forEach((track) => {
+          track.enabled = false
+        })
+      }
     }
 
     stopSpeechRecognition()
@@ -711,6 +777,51 @@ Let's begin with our first question: ${config.questions[0]}`,
         onFaceAwayViolation={handleFaceAwayViolation}
       />
 
+      {/* Microphone Permission Error Modal */}
+      {microphonePermissionDenied && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="p-6 max-w-md mx-4 border-orange-500 bg-orange-50 dark:bg-orange-900">
+            <div className="text-center space-y-4">
+              <AlertCircle className="w-12 h-12 text-orange-500 mx-auto" />
+              <h3 className="text-lg font-semibold text-orange-800 dark:text-orange-200">
+                Microphone Access Required
+              </h3>
+              <p className="text-orange-700 dark:text-orange-300 text-sm">
+                {microphoneError || "Microphone access is needed for voice input during the assessment."}
+              </p>
+              <div className="space-y-3">
+                <p className="text-xs text-orange-600 dark:text-orange-400">
+                  To enable microphone access:
+                  <br />
+                  1. Click the microphone icon in your browser's address bar
+                  <br />
+                  2. Select "Allow" for microphone permissions
+                  <br />
+                  3. Refresh the page
+                </p>
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={requestMicrophonePermission}
+                    className="flex-1"
+                    size="sm"
+                  >
+                    Try Again
+                  </Button>
+                  <Button
+                    onClick={() => setMicrophonePermissionDenied(false)}
+                    variant="outline"
+                    className="flex-1"
+                    size="sm"
+                  >
+                    Continue Without Voice
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Face Detection Warning Modal */}
       {showFaceWarning && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -774,6 +885,12 @@ Let's begin with our first question: ${config.questions[0]}`,
                       AI Reading
                     </Badge>
                   )}
+                  {microphonePermissionDenied && (
+                    <Badge variant="outline" className="text-orange-600 border-orange-200 ml-2">
+                      <MicOff className="w-3 h-3 mr-1" />
+                      No Mic Access
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -828,11 +945,32 @@ Let's begin with our first question: ${config.questions[0]}`,
                     This is a secure AI-powered interview assessment. Make sure your camera and microphone are working
                     properly. Keep your face aligned with the silhouette guide.
                   </p>
+                  
+                  {/* Microphone status warning */}
+                  {microphoneError && (
+                    <div className="p-3 bg-orange-50 dark:bg-orange-900 border border-orange-200 dark:border-orange-700 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                            Microphone Issue
+                          </p>
+                          <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                            {microphoneError}
+                          </p>
+                          <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
+                            You can still complete the assessment using text input only.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
                     <p>• Duration: {config.duration} minutes</p>
                     <p>• Questions: {config.questions.length}</p>
                     <p>• AI will read questions aloud through your speakers</p>
-                    <p>• You can respond by voice or text</p>
+                    <p>• You can respond by {microphonePermissionDenied ? "text only" : "voice or text"}</p>
                     <p>• Face detection: 30 seconds away = 1 warning</p>
                     <p>• Assessment terminates after 2 warnings</p>
                     <p>• Timer starts after first question is read</p>
@@ -921,7 +1059,7 @@ Let's begin with our first question: ${config.questions[0]}`,
         )}
 
         {/* Live Transcription Display */}
-        {isTranscribing && !isAIReading && speechRecognitionSupported && (
+        {isTranscribing && !isAIReading && speechRecognitionSupported && !microphonePermissionDenied && (
           <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 border-t border-blue-200 dark:border-blue-700">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -999,13 +1137,19 @@ Let's begin with our first question: ${config.questions[0]}`,
               {/* Audio Controls - Single Mic Button */}
               <Button
                 size="sm"
-                variant={isMuted ? "danger" : "secondary"}
-                onClick={toggleMute}
+                variant={isMuted || microphonePermissionDenied ? "danger" : "secondary"}
+                onClick={microphonePermissionDenied ? requestMicrophonePermission : toggleMute}
                 className="rounded-full w-10 h-10 p-0"
                 disabled={isAIReading}
-                title={isMuted ? "Unmute microphone" : "Mute microphone"}
+                title={
+                  microphonePermissionDenied 
+                    ? "Click to enable microphone access" 
+                    : isMuted 
+                      ? "Unmute microphone" 
+                      : "Mute microphone"
+                }
               >
-                {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                {microphonePermissionDenied || isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </Button>
 
               {/* Text Input */}
@@ -1020,7 +1164,9 @@ Let's begin with our first question: ${config.questions[0]}`,
                         ? "Wait for AI to finish, then you can respond..."
                         : !faceDetectionData.faceDetected
                           ? "Align your face with the camera to respond..."
-                          : "Type your response or use voice input..."
+                          : microphonePermissionDenied
+                            ? "Type your response (microphone access denied)..."
+                            : "Type your response or use voice input..."
                   }
                   className="min-h-[44px] max-h-32 resize-none rounded-2xl border-gray-300 dark:border-gray-600"
                   disabled={isAIReading || !canUserRespond}
@@ -1061,11 +1207,17 @@ Let's begin with our first question: ${config.questions[0]}`,
                 ) : (
                   <>
                     <span>Press Enter to send, Shift+Enter for new line</span>
-                    {isTranscribing && speechRecognitionSupported && (
+                    {isTranscribing && speechRecognitionSupported && !microphonePermissionDenied && (
                       <span className="text-blue-600 dark:text-blue-400 flex items-center bg-blue-50 dark:bg-blue-900 px-2 py-1 rounded-full">
                         <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2" />
                         <Mic className="w-3 h-3 mr-1" />
                         Voice transcription active
+                      </span>
+                    )}
+                    {microphonePermissionDenied && (
+                      <span className="text-orange-600 dark:text-orange-400 flex items-center">
+                        <MicOff className="w-3 h-3 mr-1" />
+                        Microphone access denied - text input only
                       </span>
                     )}
                   </>
