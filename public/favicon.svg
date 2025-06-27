@@ -1,11 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-briefcase">
-  <rect width="20" height="14" x="2" y="7" rx="2" ry="2" fill="#4f46e5"/>
-  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" stroke="#ffffff"/>
-  <path d="M7.5 7h9" stroke="#ffffff"/>
-  <path d="M12 7v14" stroke="#ffffff"/>
-  <path d="M7 13h10" stroke="#ffffff"/>
-  <path d="M9 3v4" stroke="#ffffff"/>
-  <path d="M15 3v4" stroke="#ffffff"/>
-  <path d="M9 18 4 13l2-2" stroke="#ffcc00" stroke-width="2.5"/>
-  <path d="m15 18 5-5-2-2" stroke="#ffcc00" stroke-width="2.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <!-- Background Circle -->
+  <circle cx="32" cy="32" r="32" fill="#f8fafc" />
+  
+  <!-- Briefcase -->
+  <path d="M18 24H46C47.1046 24 48 24.8954 48 26V44C48 45.1046 47.1046 46 46 46H18C16.8954 46 16 45.1046 16 44V26C16 24.8954 16.8954 24 18 24Z" fill="#4338ca" stroke="#4338ca" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M24 46V20C24 18.8954 24.8954 18 26 18H38C39.1046 18 40 18.8954 40 20V46" stroke="#4338ca" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Lightning Bolt in Navy Circle -->
+  <circle cx="46" cy="18" r="12" fill="#1e3a8a"/>
+  <path d="M46 12L41 18H46L46 24L51 18H46L46 12Z" fill="white" stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
