@@ -283,12 +283,12 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4 w-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">AI Interview</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Interview</h1>
             <Badge variant="outline" className="text-sm">
               Question {currentQuestionIndex + 1} of {config.questions.length}
             </Badge>
@@ -299,9 +299,9 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Chat Panel */}
           <div className="lg:col-span-2">
-            <Card className="h-[500px] sm:h-[600px] flex flex-col">
+            <Card className="h-[500px] sm:h-[600px] flex flex-col w-full">
               {/* Chat Header */}
-              <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 p-4">
+              <div className="border-b border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
                     <Bot className="w-6 h-6 text-white" />
@@ -325,7 +325,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -434,7 +434,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                     <span>Completed</span>
                     <span>{currentQuestionIndex} / {config.questions.length}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
                       className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                       style={{
@@ -478,7 +478,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
               <CardHeader>
                 <CardTitle className="text-sm">Instructions</CardTitle>
               </CardHeader>
-              <CardContent className="text-sm text-gray-600 space-y-2">
+              <CardContent className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
                 <p>• Click the microphone icon to toggle recording</p>
                 <p>• Or type your response in the text box</p>
                 <p>• Keep your face visible to the camera</p>

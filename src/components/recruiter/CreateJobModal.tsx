@@ -273,14 +273,14 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
           <X size={20} />
         </button>
 
-        <div className="mb-6">
+        <div className="mb-6 p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Create New Job</h2>
           <p className="text-gray-600 dark:text-gray-400">
             Fill out the details below to create a new job posting
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 p-6 pt-0">
           {/* Basic Information */}
           <div className="grid md:grid-cols-2 gap-4">
             <div>
