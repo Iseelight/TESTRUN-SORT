@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Users, Briefcase, BarChart3, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Users, Briefcase, BarChart3, CheckCircle, XCircle, Clock, AlertCircle, Trash2 } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { CandidateCard } from '../components/recruiter/CandidateCard';
 import { FilterPanel } from '../components/recruiter/FilterPanel';
@@ -163,6 +163,22 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
     }
   }, [user]);
 
+  // Check for expired jobs and update their status
+  useEffect(() => {
+    const now = new Date();
+    const updatedJobs = jobs.map(job => {
+      const expiryDate = new Date(job.expires_at);
+      if (expiryDate < now && job.status === 'active') {
+        return { ...job, status: 'inactive' };
+      }
+      return job;
+    });
+    
+    if (JSON.stringify(updatedJobs) !== JSON.stringify(jobs)) {
+      setJobs(updatedJobs);
+    }
+  }, [jobs]);
+
   // Show login modal if not authenticated
   if (!user) {
     return (
@@ -316,6 +332,12 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
     setJobs(prev => [...prev, newJob]);
   };
 
+  const handleRemoveJob = (jobId: string) => {
+    // Remove job and its candidates
+    setJobs(prev => prev.filter(job => job.id !== jobId));
+    setCandidates(prev => prev.filter(candidate => candidate.job_id !== jobId));
+  };
+
   const statusCounts = getStatusCounts();
 
   return (
@@ -434,9 +456,19 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
                           <h3 className="font-medium text-gray-900 dark:text-white">{job.title}</h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400">{getCandidateCount(job.id)} candidates</p>
                         </div>
-                        <Badge variant={job.status === 'active' ? 'success' : job.status === 'inactive' ? 'warning' : 'error'}>
-                          {job.status}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={job.status === 'active' ? 'success' : job.status === 'inactive' ? 'warning' : 'error'}>
+                            {job.status}
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRemoveJob(job.id)}
+                            className="p-1"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -530,13 +562,22 @@ export function RecruiterDashboard({ onBack }: RecruiterDashboardProps) {
             ) : (
               <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {jobs.map(job => (
-                  <JobPostingCard
-                    key={job.id}
-                    job={job}
-                    candidateCount={getCandidateCount(job.id)}
-                    onViewCandidates={handleViewCandidates}
-                    onEditJob={(jobId) => console.log('Edit job:', jobId)}
-                  />
+                  <div key={job.id} className="relative">
+                    <JobPostingCard
+                      job={job}
+                      candidateCount={getCandidateCount(job.id)}
+                      onViewCandidates={handleViewCandidates}
+                      onEditJob={(jobId) => console.log('Edit job:', jobId)}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRemoveJob(job.id)}
+                      className="absolute top-4 right-4 p-1"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
                 ))}
               </div>
             )}

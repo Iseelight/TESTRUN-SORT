@@ -447,9 +447,11 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
                       ${isActive ? 'bg-blue-600 text-white' : 
                         isCompleted ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}
                     `}>
-                      {stepName === 'assessment' && <Camera size={16} />}
+                      {stepName === 'jobs' && <Briefcase size={16} />}
+                      {stepName === 'application' && <FileText size={16} />}
                       {stepName === 'cv-analysis' && <FileText size={16} />}
-                      {stepName !== 'assessment' && stepName !== 'cv-analysis' && (index + 1)}
+                      {stepName === 'assessment' && <Camera size={16} />}
+                      {stepName === 'results' && <Shield size={16} />}
                     </div>
                     {index < 4 && (
                       <div className={`

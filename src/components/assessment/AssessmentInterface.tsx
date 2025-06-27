@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
-import { Mic, MicOff, Play, Pause, RotateCcw, AlertTriangle, Settings } from 'lucide-react';
+import { Mic, MicOff, Play, Pause, RotateCcw, Settings } from 'lucide-react';
 import { AssessmentTimer } from './AssessmentTimer';
-import { FloatingVideoMonitor } from '../ui/floating-video-monitor';
+import { FloatingVideoMonitor } from './FloatingVideoMonitor';
 
 interface Question {
   id: string;
@@ -50,8 +50,6 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [microphoneError, setMicrophoneError] = useState<string | null>(null);
-  const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -60,36 +58,28 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
 
   const currentQuestion = questions[currentQuestionIndex];
 
-  const checkMicrophonePermission = async () => {
-    try {
-      // Check if permissions API is available
-      if ('permissions' in navigator) {
-        const permission = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-        setPermissionStatus(permission.state);
-        
-        // Listen for permission changes
-        permission.onchange = () => {
-          setPermissionStatus(permission.state);
-          if (permission.state === 'granted') {
-            setMicrophoneError(null);
-            initializeAudio();
-          }
-        };
-      } else {
-        // Fallback: try to access microphone directly
-        await initializeAudio();
+  useEffect(() => {
+    // Initialize audio automatically without permission checks
+    initializeAudio();
+    
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
       }
-    } catch (error) {
-      console.error('Error checking microphone permission:', error);
-      setPermissionStatus('denied');
-      setMicrophoneError('Unable to check microphone permissions');
+    };
+  }, []);
+
+  useEffect(() => {
+    if (currentQuestion) {
+      setTimeRemaining(currentQuestion.timeLimit);
+      setAudioBlob(null);
+      setIsRecording(false);
+      setIsPaused(false);
     }
-  };
+  }, [currentQuestion]);
 
   const initializeAudio = async () => {
     try {
-      setMicrophoneError(null);
-      
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -99,7 +89,6 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
       });
       
       streamRef.current = stream;
-      setPermissionStatus('granted');
       
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
@@ -121,82 +110,37 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
         audioChunksRef.current = [];
       };
       
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error accessing microphone:', error);
-      setPermissionStatus('denied');
-      
-      if (error.name === 'NotAllowedError') {
-        setMicrophoneError('Microphone access denied. Please allow microphone access in your browser settings and refresh the page.');
-      } else if (error.name === 'NotFoundError') {
-        setMicrophoneError('No microphone found. Please connect a microphone and refresh the page.');
-      } else if (error.name === 'NotReadableError') {
-        setMicrophoneError('Microphone is being used by another application. Please close other applications and refresh the page.');
-      } else {
-        setMicrophoneError(`Microphone error: ${error.message || 'Unknown error occurred'}`);
-      }
+      // Continue without showing error modal
     }
   };
-
-  const requestMicrophonePermission = async () => {
-    setMicrophoneError(null);
-    setPermissionStatus('checking');
-    await initializeAudio();
-  };
-
-  const openBrowserSettings = () => {
-    // Provide instructions for different browsers
-    const userAgent = navigator.userAgent.toLowerCase();
-    let instructions = '';
-    
-    if (userAgent.includes('chrome')) {
-      instructions = 'Click the camera/microphone icon in the address bar, or go to Settings > Privacy and security > Site Settings > Microphone';
-    } else if (userAgent.includes('firefox')) {
-      instructions = 'Click the microphone icon in the address bar, or go to Preferences > Privacy & Security > Permissions > Microphone';
-    } else if (userAgent.includes('safari')) {
-      instructions = 'Go to Safari > Preferences > Websites > Microphone';
-    } else {
-      instructions = 'Check your browser settings for microphone permissions';
-    }
-    
-    alert(`To enable microphone access:\n\n${instructions}\n\nThen refresh this page.`);
-  };
-
-  useEffect(() => {
-    checkMicrophonePermission();
-    
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (currentQuestion) {
-      setTimeRemaining(currentQuestion.timeLimit);
-      setAudioBlob(null);
-      setIsRecording(false);
-      setIsPaused(false);
-    }
-  }, [currentQuestion]);
 
   const startRecording = useCallback(() => {
-    if (!mediaRecorderRef.current || permissionStatus !== 'granted') {
-      setMicrophoneError('Microphone not available. Please check permissions.');
+    if (!mediaRecorderRef.current) {
+      // Try to initialize audio again if not available
+      initializeAudio().then(() => {
+        if (mediaRecorderRef.current) {
+          startRecordingInternal();
+        }
+      });
       return;
     }
 
+    startRecordingInternal();
+  }, []);
+
+  const startRecordingInternal = () => {
     try {
       audioChunksRef.current = [];
-      mediaRecorderRef.current.start();
+      mediaRecorderRef.current?.start();
       setIsRecording(true);
       setIsPaused(false);
       setAudioBlob(null);
     } catch (error) {
       console.error('Error starting recording:', error);
-      setMicrophoneError('Failed to start recording. Please try again.');
     }
-  }, [permissionStatus]);
+  };
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -287,74 +231,9 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
     }, 1000);
   };
 
-  if (permissionStatus === 'checking') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Checking microphone permissions...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (permissionStatus === 'denied' || microphoneError) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-              Microphone Access Required
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                {microphoneError || 'This assessment requires microphone access to record your responses.'}
-              </AlertDescription>
-            </Alert>
-            
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600">
-                To continue with the assessment, please:
-              </p>
-              <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
-                <li>Allow microphone access when prompted</li>
-                <li>Check your browser's site settings</li>
-                <li>Ensure your microphone is connected and working</li>
-                <li>Refresh the page after granting permissions</li>
-              </ol>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button onClick={requestMicrophonePermission} className="flex-1">
-                <Mic className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
-              <Button variant="outline" onClick={openBrowserSettings}>
-                <Settings className="h-4 w-4 mr-2" />
-                Help
-              </Button>
-            </div>
-            
-            {onTerminate && (
-              <Button variant="outline" onClick={onTerminate} className="w-full">
-                Exit Assessment
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="max-w-4xl w-full">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -365,9 +244,10 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
           </div>
           
           <AssessmentTimer
-            timeLimit={currentQuestion?.timeLimit || 0}
+            durationMinutes={currentQuestion?.timeLimit / 60 || 0}
             onTimeUp={handleTimeUp}
             isActive={true}
+            startTime={Date.now()}
           />
         </div>
 
@@ -500,7 +380,31 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
             </Card>
 
             {/* Video Monitor */}
-            <FloatingVideoMonitor />
+            <FloatingVideoMonitor 
+              isActive={true}
+              onSecurityAlert={(alert) => console.log('Security alert:', alert)}
+              onFaceDetectionUpdate={(data) => console.log('Face detection update:', data)}
+              onFaceAwayViolation={() => {
+                const result = {
+                  questionsAnswered: responses.length,
+                  totalQuestions: questions.length,
+                  duration: config.duration,
+                  securityAlertsCount: 2,
+                  securityAlerts: [
+                    {
+                      id: Date.now().toString(),
+                      type: 'face_not_detected',
+                      message: 'Face not detected for 30 seconds',
+                      timestamp: new Date(),
+                      severity: 'high'
+                    }
+                  ],
+                  responses,
+                  terminationReason: 'Session terminated: Looked away from camera twice'
+                };
+                onAssessmentComplete(result);
+              }}
+            />
 
             {/* Instructions */}
             <Card>
