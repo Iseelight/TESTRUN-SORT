@@ -108,63 +108,6 @@ export function AssessmentInterface({
   const isStoppingRecognitionRef = useRef(false)
   const shouldRestartRecognitionRef = useRef(false)
 
-  // Handle security alerts from face detection
-  const handleSecurityAlert = useCallback((alert: SecurityAlert) => {
-    setSecurityAlerts((prev) => [...prev, alert])
-    console.log("Security Alert:", alert)
-  }, [])
-
-  // Handle face detection updates
-  const handleFaceDetectionUpdate = useCallback((data: FaceDetectionData) => {
-    setFaceDetectionData(data)
-  }, [])
-
-  // Handle face away violation
-  const handleFaceAwayViolation = useCallback(() => {
-    const newCount = faceWarningCount + 1
-    setFaceWarningCount(newCount)
-
-    console.log(`Face away violation ${newCount}/2`)
-
-    if (newCount >= 2) {
-      setIsAssessmentTerminated(true)
-      setIsAssessmentActive(false)
-      
-      // Complete assessment with termination reason
-      const assessmentResult: AssessmentResult = {
-        duration: assessmentStartTime ? Math.floor((Date.now() - assessmentStartTime.getTime()) / 1000) : 0,
-        messagesCount: messages.filter(m => m.sender === "candidate").length,
-        securityAlertsCount: securityAlerts.length + 1, // Add the final violation
-        completedAt: new Date(),
-        messages: messages.map(m => ({
-          id: m.id,
-          sender: m.sender,
-          message: m.content,
-          timestamp: m.timestamp
-        })),
-        securityAlerts: [...securityAlerts, {
-          id: Date.now().toString(),
-          type: "face_not_detected",
-          message: "Assessment terminated: Face not detected for extended period",
-          timestamp: new Date(),
-          severity: "high"
-        }],
-        questionsAnswered: currentQuestion,
-        totalQuestions: config.questions.length,
-        userResponses: messages.filter(m => m.sender === "candidate").map(m => m.content),
-        terminationReason: "Assessment terminated: You have been away from the camera for more than 30 seconds twice."
-      };
-      
-      onAssessmentComplete(assessmentResult);
-      
-    } else {
-      setShowFaceWarning(true)
-      setTimeout(() => {
-        setShowFaceWarning(false)
-      }, 5000)
-    }
-  }, [faceWarningCount, messages, currentQuestion, securityAlerts, assessmentStartTime, config.questions.length, onAssessmentComplete])
-
   // Retry microphone access
   const retryMicrophoneAccess = useCallback(async () => {
     setMicrophoneError(null)
@@ -279,6 +222,63 @@ export function AssessmentInterface({
     initializeAudio()
   }, [initializeAudio])
 
+  // Handle security alerts from face detection
+  const handleSecurityAlert = useCallback((alert: SecurityAlert) => {
+    setSecurityAlerts((prev) => [...prev, alert])
+    console.log("Security Alert:", alert)
+  }, [])
+
+  // Handle face detection updates
+  const handleFaceDetectionUpdate = useCallback((data: FaceDetectionData) => {
+    setFaceDetectionData(data)
+  }, [])
+
+  // Handle face away violation
+  const handleFaceAwayViolation = useCallback(() => {
+    const newCount = faceWarningCount + 1
+    setFaceWarningCount(newCount)
+
+    console.log(`Face away violation ${newCount}/2`)
+
+    if (newCount >= 2) {
+      setIsAssessmentTerminated(true)
+      setIsAssessmentActive(false)
+      
+      // Complete assessment with termination reason
+      const assessmentResult: AssessmentResult = {
+        duration: assessmentStartTime ? Math.floor((Date.now() - assessmentStartTime.getTime()) / 1000) : 0,
+        messagesCount: messages.filter(m => m.sender === "candidate").length,
+        securityAlertsCount: securityAlerts.length + 1, // Add the final violation
+        completedAt: new Date(),
+        messages: messages.map(m => ({
+          id: m.id,
+          sender: m.sender,
+          message: m.content,
+          timestamp: m.timestamp
+        })),
+        securityAlerts: [...securityAlerts, {
+          id: Date.now().toString(),
+          type: "face_not_detected",
+          message: "Assessment terminated: Face not detected for extended period",
+          timestamp: new Date(),
+          severity: "high"
+        }],
+        questionsAnswered: currentQuestion,
+        totalQuestions: config.questions.length,
+        userResponses: messages.filter(m => m.sender === "candidate").map(m => m.content),
+        terminationReason: "Assessment terminated: You have been away from the camera for more than 30 seconds twice."
+      };
+      
+      onAssessmentComplete(assessmentResult);
+      
+    } else {
+      setShowFaceWarning(true)
+      setTimeout(() => {
+        setShowFaceWarning(false)
+      }, 5000)
+    }
+  }, [faceWarningCount, messages, currentQuestion, securityAlerts, assessmentStartTime, config.questions.length, onAssessmentComplete])
+
   // Safe speech recognition stop function
   const stopSpeechRecognition = useCallback(() => {
     if (recognitionRef.current && !isStoppingRecognitionRef.current) {
@@ -361,9 +361,12 @@ export function AssessmentInterface({
           }
         }
 
+        // Apply auto-correction and filter out filler words
+        interimTranscript = autoCorrectTranscript(interimTranscript)
         setLiveTranscript(interimTranscript)
 
         if (finalTranscript.trim()) {
+          finalTranscript = autoCorrectTranscript(finalTranscript)
           setFinalTranscript(finalTranscript.trim())
           setInputText((prev) => {
             const newText = prev + (prev ? " " : "") + finalTranscript.trim()
@@ -441,6 +444,27 @@ export function AssessmentInterface({
       setSpeechRecognitionSupported(false)
     }
   }, [isAssessmentActive, isAssessmentTerminated, isAIReading, canUserRespond, startSpeechRecognition])
+
+  // Auto-correct transcript
+  const autoCorrectTranscript = (text: string): string => {
+    // Remove filler words
+    let corrected = text.replace(/\b(um|uh|er|like|you know|I mean|so)\b/gi, ' ')
+    
+    // Fix common grammar issues
+    corrected = corrected.replace(/\bi\b/g, 'I')
+    corrected = corrected.replace(/\bi'm\b/gi, "I'm")
+    corrected = corrected.replace(/\bi've\b/gi, "I've")
+    corrected = corrected.replace(/\bi'll\b/gi, "I'll")
+    corrected = corrected.replace(/\bi'd\b/gi, "I'd")
+    corrected = corrected.replace(/\bwont\b/gi, "won't")
+    corrected = corrected.replace(/\bcant\b/gi, "can't")
+    corrected = corrected.replace(/\bdont\b/gi, "don't")
+    
+    // Remove extra spaces
+    corrected = corrected.replace(/\s+/g, ' ').trim()
+    
+    return corrected
+  }
 
   // Timer countdown - Only starts after timer is enabled
   useEffect(() => {
@@ -856,7 +880,7 @@ Let's begin with our first question: ${config.questions[0]}`,
                     {formatTime(timeRemaining)}
                   </Badge>
                 )}
-                {faceWarningCount > 0 && <Badge variant="error">Warnings: {faceWarningCount}/2</Badge>}
+                {faceWarningCount > 0 && <Badge variant="destructive">Warnings: {faceWarningCount}/2</Badge>}
               </>
             )}
             <Button variant="ghost" size="sm">

@@ -51,7 +51,7 @@ export function ResultsPage({
         icon: <XCircle className="w-16 h-16 text-red-600 mx-auto" />,
         title: 'Application Not Selected',
         subtitle: 'Thank you for your interest in this position',
-        badgeVariant: 'error' as const,
+        badgeVariant: 'destructive' as const,
         badgeText: 'Not Selected'
       };
     } else if (isPassed) {
@@ -59,7 +59,7 @@ export function ResultsPage({
         icon: <Clock className="w-16 h-16 text-blue-600 mx-auto" />,
         title: 'Assessment Completed',
         subtitle: 'Your application is under review',
-        badgeVariant: 'info' as const,
+        badgeVariant: 'default' as const,
         badgeText: 'Under Review'
       };
     } else {
@@ -67,7 +67,7 @@ export function ResultsPage({
         icon: <XCircle className="w-16 h-16 text-red-600 mx-auto" />,
         title: 'Assessment Complete',
         subtitle: 'Unfortunately, you did not meet the minimum requirements',
-        badgeVariant: 'error' as const,
+        badgeVariant: 'destructive' as const,
         badgeText: 'Below Threshold'
       };
     }
@@ -78,7 +78,7 @@ export function ResultsPage({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800">
         <div className="text-center">
           <div className="mb-4">
             {statusInfo.icon}
@@ -106,7 +106,7 @@ export function ResultsPage({
 
       {/* Waitlist Message */}
       {isWaitlisted && waitlistMessage && (
-        <Card>
+        <Card className="bg-white dark:bg-gray-800">
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
               Waitlist Information
@@ -119,7 +119,7 @@ export function ResultsPage({
       )}
 
       {/* Overall Score */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Overall Score</h2>
           <div className="text-6xl font-bold text-gray-900 dark:text-white mb-4">
@@ -137,7 +137,7 @@ export function ResultsPage({
       </Card>
 
       {/* Detailed Scores */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Skill Assessment</h3>
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-4">
@@ -180,7 +180,7 @@ export function ResultsPage({
 
       {/* Interview Details */}
       {isSelected && candidate.feedback?.interviewDetails && (
-        <Card>
+        <Card className="bg-white dark:bg-gray-800">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Interview Details</h3>
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
             <div className="grid md:grid-cols-2 gap-4">
@@ -212,7 +212,7 @@ export function ResultsPage({
 
       {/* Feedback Section */}
       {candidate.feedback && (
-        <Card>
+        <Card className="bg-white dark:bg-gray-800">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Assessment Feedback</h3>
             <Button
@@ -293,7 +293,7 @@ export function ResultsPage({
       )}
 
       {/* Actions */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Next Steps</h3>
         
         <div className="flex flex-wrap gap-3">

@@ -16,8 +16,8 @@ export function CandidateCard({ candidate, onViewProfile, onViewConversation }: 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'selected': return 'success';
-      case 'rejected': return 'error';
-      case 'completed': return 'info';
+      case 'rejected': return 'destructive';
+      case 'completed': return 'default';
       case 'interviewing': return 'warning';
       default: return 'default';
     }
@@ -30,13 +30,13 @@ export function CandidateCard({ candidate, onViewProfile, onViewConversation }: 
   };
 
   return (
-    <Card hover className="relative">
+    <Card className="relative bg-white dark:bg-gray-800">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{candidate.name}</h3>
           <p className="text-gray-600 dark:text-gray-400">{candidate.email}</p>
         </div>
-        <Badge variant={getStatusColor(candidate.status)} size="md">
+        <Badge variant={getStatusColor(candidate.status)}>
           {candidate.status.charAt(0).toUpperCase() + candidate.status.slice(1)}
         </Badge>
       </div>
@@ -69,25 +69,25 @@ export function CandidateCard({ candidate, onViewProfile, onViewConversation }: 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-xs text-gray-600 dark:text-gray-400">Technical</span>
-            <span className="text-xs font-medium">{candidate.scores.technical}%</span>
+            <span className="text-xs font-medium text-gray-900 dark:text-white">{candidate.scores.technical}%</span>
           </div>
           <ProgressBar value={candidate.scores.technical} color="blue" />
           
           <div className="flex justify-between items-center">
             <span className="text-xs text-gray-600 dark:text-gray-400">Soft Skills</span>
-            <span className="text-xs font-medium">{candidate.scores.soft}%</span>
+            <span className="text-xs font-medium text-gray-900 dark:text-white">{candidate.scores.soft}%</span>
           </div>
           <ProgressBar value={candidate.scores.soft} color="purple" />
           
           <div className="flex justify-between items-center">
             <span className="text-xs text-gray-600 dark:text-gray-400">Leadership</span>
-            <span className="text-xs font-medium">{candidate.scores.leadership}%</span>
+            <span className="text-xs font-medium text-gray-900 dark:text-white">{candidate.scores.leadership}%</span>
           </div>
           <ProgressBar value={candidate.scores.leadership} color="green" />
           
           <div className="flex justify-between items-center">
             <span className="text-xs text-gray-600 dark:text-gray-400">Communication</span>
-            <span className="text-xs font-medium">{candidate.scores.communication}%</span>
+            <span className="text-xs font-medium text-gray-900 dark:text-white">{candidate.scores.communication}%</span>
           </div>
           <ProgressBar value={candidate.scores.communication} color="yellow" />
         </div>

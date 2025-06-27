@@ -16,20 +16,20 @@ export function JobPostingCard({ job, candidateCount, onViewCandidates, onEditJo
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'success';
-      case 'closed': return 'error';
+      case 'closed': return 'destructive';
       case 'draft': return 'warning';
       default: return 'default';
     }
   };
 
   return (
-    <Card hover className="relative">
+    <Card className="relative bg-white dark:bg-gray-800">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">{job.title}</h3>
           <p className="text-gray-600 dark:text-gray-400">{job.company}</p>
         </div>
-        <Badge variant={getStatusColor(job.status)} size="md">
+        <Badge variant={getStatusColor(job.status)}>
           {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
         </Badge>
       </div>
@@ -61,19 +61,19 @@ export function JobPostingCard({ job, candidateCount, onViewCandidates, onEditJo
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">Technical:</span>
-            <span className="font-medium">{job.skillWeights.technical}%</span>
+            <span className="font-medium text-gray-900 dark:text-white">{job.skillWeights.technical}%</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">Soft Skills:</span>
-            <span className="font-medium">{job.skillWeights.soft}%</span>
+            <span className="font-medium text-gray-900 dark:text-white">{job.skillWeights.soft}%</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">Leadership:</span>
-            <span className="font-medium">{job.skillWeights.leadership}%</span>
+            <span className="font-medium text-gray-900 dark:text-white">{job.skillWeights.leadership}%</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">Communication:</span>
-            <span className="font-medium">{job.skillWeights.communication}%</span>
+            <span className="font-medium text-gray-900 dark:text-white">{job.skillWeights.communication}%</span>
           </div>
         </div>
       </div>

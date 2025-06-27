@@ -57,7 +57,7 @@ export function ApplicationForm({ jobTitle, onSubmit, isSubmitting = false }: Ap
   };
 
   return (
-    <Card>
+    <Card className="bg-white dark:bg-gray-800">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Apply for {jobTitle}</h2>
         <p className="text-gray-600 dark:text-gray-400">

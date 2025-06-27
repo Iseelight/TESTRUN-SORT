@@ -57,6 +57,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [jobLink, setJobLink] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -70,6 +71,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
     salary_currency: 'USD',
     description: '',
     requirements: [''],
+    suggested_questions: [''],
     skill_weights: {
       technical: 40,
       soft: 25,
@@ -120,16 +122,57 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
     }
   };
 
+  const addSuggestedQuestion = () => {
+    setFormData(prev => ({
+      ...prev,
+      suggested_questions: [...prev.suggested_questions, '']
+    }));
+  };
+
+  const updateSuggestedQuestion = (index: number, value: string) => {
+    const newQuestions = [...formData.suggested_questions];
+    newQuestions[index] = value;
+    setFormData(prev => ({ ...prev, suggested_questions: newQuestions }));
+  };
+
+  const removeSuggestedQuestion = (index: number) => {
+    if (formData.suggested_questions.length > 1) {
+      const newQuestions = formData.suggested_questions.filter((_, i) => i !== index);
+      setFormData(prev => ({ ...prev, suggested_questions: newQuestions }));
+    }
+  };
+
   const handleGenerateDescription = async () => {
     const jobTitle = formData.title === 'Other' ? formData.customTitle : formData.title;
     const requirements = formData.requirements.filter(req => req.trim() !== '');
     
-    if (!jobTitle) return;
+    if (!jobTitle || requirements.length === 0) {
+      alert("Please enter a job title and at least one requirement before generating a description.");
+      return;
+    }
     
     setIsGeneratingDescription(true);
     try {
       const description = await generateJobDescription(jobTitle, requirements);
       setFormData(prev => ({ ...prev, description }));
+      
+      // Generate suggested interview questions based on job description and requirements
+      const generatedQuestions = [
+        `What experience do you have with ${requirements[0]}?`,
+        `How have you applied ${requirements.length > 1 ? requirements[1] : requirements[0]} in your previous roles?`,
+        `Can you describe a project where you used ${jobTitle.includes('Developer') ? 'modern development practices' : 'industry best practices'}?`,
+        `How do you stay current with trends in ${jobTitle.includes('Developer') ? 'technology' : 'your field'}?`,
+        `What challenges have you faced when working with ${requirements.length > 2 ? requirements[2] : requirements[0]}?`
+      ];
+      
+      setSuggestedQuestions(generatedQuestions);
+      
+      // Update suggested questions in form data
+      setFormData(prev => ({
+        ...prev,
+        suggested_questions: generatedQuestions
+      }));
+      
     } catch (error) {
       console.error('Failed to generate description:', error);
     } finally {
@@ -144,6 +187,11 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
     const jobLocation = formData.location === 'Other' ? formData.customLocation : formData.location;
     const requirements = formData.requirements.filter(req => req.trim() !== '');
     
+    if (requirements.length === 0) {
+      alert("Please add at least one job requirement.");
+      return;
+    }
+    
     const jobData = {
       title: jobTitle,
       company: formData.company,
@@ -154,6 +202,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
       salary_currency: formData.salary_currency,
       description: formData.description,
       requirements,
+      suggested_questions: formData.suggested_questions.filter(q => q.trim() !== ''),
       skill_weights: formData.skill_weights,
       cutoff_percentage: formData.cutoff_percentage,
       max_candidates: formData.max_candidates,
@@ -180,6 +229,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
         salary_currency: 'USD',
         description: '',
         requirements: [''],
+        suggested_questions: [''],
         skill_weights: {
           technical: 40,
           soft: 25,
@@ -218,7 +268,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <Card className="w-full max-w-4xl relative my-8">
+      <Card className="w-full max-w-4xl relative my-8 bg-white dark:bg-gray-800">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10"
@@ -362,38 +412,10 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
             </div>
           </div>
 
-          {/* Job Description */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Job Description *
-              </label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleGenerateDescription}
-                loading={isGeneratingDescription}
-                icon={Wand2}
-                disabled={!formData.title || (formData.title === 'Other' && !formData.customTitle)}
-              >
-                AI Generate
-              </Button>
-            </div>
-            <textarea
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              rows={8}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="Describe the role, responsibilities, and what you're looking for..."
-              required
-            />
-          </div>
-
-          {/* Requirements */}
+          {/* Requirements - Moved before job description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Requirements
+              Requirements *
             </label>
             <div className="space-y-2">
               {formData.requirements.map((req, index) => (
@@ -404,6 +426,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
                     onChange={(e) => updateRequirement(index, e.target.value)}
                     placeholder="Enter a requirement"
                     className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required={index === 0}
                   />
                   {formData.requirements.length > 1 && (
                     <Button
@@ -428,6 +451,105 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
             </div>
           </div>
 
+          {/* Job Description */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Job Description *
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateDescription}
+                loading={isGeneratingDescription}
+                disabled={!formData.title || (formData.title === 'Other' && !formData.customTitle) || formData.requirements.filter(r => r.trim()).length === 0}
+              >
+                <Wand2 className="mr-2 h-4 w-4" />
+                AI Generate
+              </Button>
+            </div>
+            <textarea
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              rows={8}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="Describe the role, responsibilities, and what you're looking for..."
+              required
+            />
+          </div>
+
+          {/* Suggested Interview Questions */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Suggested Interview Questions (Optional)
+              </label>
+              <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                <Info size={14} className="mr-1" />
+                AI will focus on these areas during interviews
+              </div>
+            </div>
+            <div className="space-y-2">
+              {formData.suggested_questions.map((question, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={question}
+                    onChange={(e) => updateSuggestedQuestion(index, e.target.value)}
+                    placeholder="Enter a suggested interview question"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                  {formData.suggested_questions.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeSuggestedQuestion(index)}
+                    >
+                      <X size={16} />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addSuggestedQuestion}
+              >
+                Add Question
+              </Button>
+            </div>
+            
+            {suggestedQuestions.length > 0 && (
+              <div className="mt-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">AI-Generated Question Suggestions</h4>
+                <ul className="space-y-1">
+                  {suggestedQuestions.map((question, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm text-blue-700 dark:text-blue-300">
+                      <button 
+                        type="button"
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-left"
+                        onClick={() => {
+                          const newQuestions = [...formData.suggested_questions];
+                          if (newQuestions[index] === '') {
+                            newQuestions[index] = question;
+                          } else {
+                            newQuestions.push(question);
+                          }
+                          setFormData(prev => ({ ...prev, suggested_questions: newQuestions }));
+                        }}
+                      >
+                        {question}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
           {/* Skill Weights */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
@@ -440,7 +562,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
                     <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
                       {skill === 'soft' ? 'Soft Skills' : skill}
                     </span>
-                    <span className="text-sm font-medium">{weight}%</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{weight}%</span>
                   </div>
                   <input
                     type="range"
@@ -505,7 +627,7 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
           </div>
 
           {/* Waitlist Settings */}
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
             <div className="flex items-center gap-2 mb-4">
               <input
                 type="checkbox"
@@ -570,8 +692,8 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
                   variant="outline"
                   size="sm"
                   onClick={copyLink}
-                  icon={linkCopied ? Check : Copy}
                 >
+                  {linkCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
                   {linkCopied ? 'Copied!' : 'Copy'}
                 </Button>
               </div>
@@ -592,8 +714,8 @@ export function CreateJobModal({ isOpen, onClose }: CreateJobModalProps) {
               type="button"
               variant="outline"
               onClick={handleShare}
-              icon={Share2}
             >
+              <Share2 className="mr-2 h-4 w-4" />
               Generate Link
             </Button>
             <Button

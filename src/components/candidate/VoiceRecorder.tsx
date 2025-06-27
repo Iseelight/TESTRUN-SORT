@@ -173,7 +173,7 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
     // Simulate speech-to-text processing
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Mock transcript - in a real app, this would use a speech-to-text API
+    // Mock transcript with auto-correction
     const mockTranscripts = [
       "I have over 5 years of experience in React development and I'm passionate about creating user-friendly interfaces.",
       "My background includes working with TypeScript, Node.js, and various cloud platforms like AWS.",
@@ -182,7 +182,14 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
       "I believe my experience in agile development and problem-solving skills would be valuable to your team."
     ];
     
-    const transcript = mockTranscripts[Math.floor(Math.random() * mockTranscripts.length)];
+    // Select a random transcript
+    let transcript = mockTranscripts[Math.floor(Math.random() * mockTranscripts.length)];
+    
+    // Apply auto-correction
+    transcript = transcript
+      .replace(/\bum\b|\buh\b|\ber\b|\blike\b|\byou know\b/gi, '') // Remove filler words
+      .replace(/\s+/g, ' ') // Remove extra spaces
+      .trim();
     
     setIsProcessing(false);
     onRecordingComplete(transcript);
@@ -233,7 +240,7 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
         {isRecording && (
           <Button
             onClick={stopRecording}
-            variant="danger"
+            variant="destructive"
             size="sm"
           >
             <MicOff className="mr-2 h-4 w-4" />
@@ -284,7 +291,7 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
 
       {isProcessing && (
         <div className="text-sm text-blue-600 dark:text-blue-400">
-          Converting speech to text...
+          Converting speech to text with auto-correction...
         </div>
       )}
     </div>

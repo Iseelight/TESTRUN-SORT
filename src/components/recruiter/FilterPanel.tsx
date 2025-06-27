@@ -27,7 +27,7 @@ export function FilterPanel({
   onReset
 }: FilterPanelProps) {
   return (
-    <Card>
+    <Card className="bg-white dark:bg-gray-800">
       <div className="flex items-center gap-2 mb-4">
         <Filter size={18} />
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>

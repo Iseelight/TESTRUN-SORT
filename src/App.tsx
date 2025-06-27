@@ -5,7 +5,7 @@ import { EnhancedCandidateApplication } from './pages/EnhancedCandidateApplicati
 import { LoginModal } from './components/auth/LoginModal';
 import { Button } from './components/ui/button';
 import { Header } from './components/layout/Header';
-import { Brain, Users, Briefcase, Camera, Shield, Eye } from 'lucide-react';
+import { Briefcase, Users, Camera, Shield, Eye, Zap } from 'lucide-react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { JobProvider } from './contexts/JobContext';
@@ -74,7 +74,10 @@ function HomePage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-4">
-              <Brain className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <div className="relative">
+                <Briefcase className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <Zap className="w-3 h-3 text-blue-600 dark:text-blue-400 absolute -top-1 -right-1" />
+              </div>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">AI-Powered Conversations</h3>
             <p className="text-gray-600 dark:text-gray-400">Intelligent interviews based on job descriptions that reveal true candidate capabilities beyond CV keywords.</p>

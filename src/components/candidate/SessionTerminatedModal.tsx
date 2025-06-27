@@ -97,7 +97,7 @@ export function SessionTerminatedModal({
                       </div>
                     </div>
                   </div>
-                  <Badge variant={violation.severity === 'critical' ? 'error' : 'warning'}>
+                  <Badge variant={violation.severity === 'critical' ? 'destructive' : 'warning'}>
                     {violation.severity === 'critical' ? 'Critical' : 'Warning'}
                   </Badge>
                 </div>
