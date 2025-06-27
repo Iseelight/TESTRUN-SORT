@@ -1,18 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Alert, AlertDescription } from '../ui/alert';
-import { Mic, MicOff, Play, Pause, RotateCcw, Settings } from 'lucide-react';
-import { AssessmentTimer } from './AssessmentTimer';
+import { Mic, MicOff, Send, Bot, User } from 'lucide-react';
 import { FloatingVideoMonitor } from './FloatingVideoMonitor';
-
-interface Question {
-  id: string;
-  text: string;
-  timeLimit: number;
-  type: 'audio' | 'video';
-}
+import { ConversationMessage } from '../../types';
+import { v4 as uuidv4 } from 'uuid';
 
 interface AssessmentConfig {
   duration: number;
@@ -35,31 +28,48 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
   onAssessmentComplete,
   onTerminate
 }) => {
-  // Transform string questions into Question objects
-  const questions: Question[] = config.questions.map((questionText, index) => ({
-    id: `question_${index + 1}`,
-    text: questionText,
-    timeLimit: Math.floor(config.duration * 60 / config.questions.length), // Distribute time evenly
-    type: 'audio' as const
-  }));
-
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [responses, setResponses] = useState<any[]>([]);
-  const [timeRemaining, setTimeRemaining] = useState(0);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
+  const [isTyping, setIsTyping] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [assessmentStartTime] = useState(Date.now());
+  const [securityAlerts, setSecurityAlerts] = useState<any[]>([]);
+  const [faceDetectionData, setFaceDetectionData] = useState<any>(null);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const currentQuestion = questions[currentQuestionIndex];
-
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    // Initialize audio automatically without permission checks
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [inputMessage]);
+
+  // Initialize assessment with first question
+  useEffect(() => {
+    // Add initial AI message with first question
+    setTimeout(() => {
+      const initialMessage: ConversationMessage = {
+        id: uuidv4(),
+        sender: 'ai',
+        message: config.questions[0],
+        timestamp: new Date()
+      };
+      setMessages([initialMessage]);
+    }, 1000);
+    
+    // Initialize audio
     initializeAudio();
     
     return () => {
@@ -67,16 +77,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
-
-  useEffect(() => {
-    if (currentQuestion) {
-      setTimeRemaining(currentQuestion.timeLimit);
-      setAudioBlob(null);
-      setIsRecording(false);
-      setIsPaused(false);
-    }
-  }, [currentQuestion]);
+  }, [config.questions]);
 
   const initializeAudio = async () => {
     try {
@@ -103,11 +104,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
       };
       
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { 
-          type: mediaRecorder.mimeType || 'audio/webm' 
-        });
-        setAudioBlob(audioBlob);
-        audioChunksRef.current = [];
+        processAudioRecording();
       };
       
     } catch (error) {
@@ -116,9 +113,17 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
     }
   };
 
-  const startRecording = useCallback(() => {
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  const startRecording = () => {
     if (!mediaRecorderRef.current) {
-      // Try to initialize audio again if not available
+      // Try to initialize audio again
       initializeAudio().then(() => {
         if (mediaRecorderRef.current) {
           startRecordingInternal();
@@ -126,231 +131,293 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
       });
       return;
     }
-
+    
     startRecordingInternal();
-  }, []);
+  };
 
   const startRecordingInternal = () => {
     try {
       audioChunksRef.current = [];
       mediaRecorderRef.current?.start();
       setIsRecording(true);
-      setIsPaused(false);
-      setAudioBlob(null);
     } catch (error) {
       console.error('Error starting recording:', error);
     }
   };
 
-  const stopRecording = useCallback(() => {
+  const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      setIsPaused(false);
     }
-  }, [isRecording]);
+  };
 
-  const pauseRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      if (isPaused) {
-        mediaRecorderRef.current.resume();
-        setIsPaused(false);
-      } else {
-        mediaRecorderRef.current.pause();
-        setIsPaused(true);
-      }
-    }
-  }, [isRecording, isPaused]);
-
-  const playRecording = () => {
-    if (audioBlob) {
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
+  const processAudioRecording = async () => {
+    if (audioChunksRef.current.length === 0) return;
+    
+    try {
+      const audioBlob = new Blob(audioChunksRef.current, { 
+        type: 'audio/webm' 
+      });
       
-      audio.onended = () => {
-        setIsPlaying(false);
-        URL.revokeObjectURL(audioUrl);
-      };
+      // Simulate speech-to-text processing
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      audio.play();
-      setIsPlaying(true);
+      // Mock transcript with auto-correction
+      const mockTranscripts = [
+        "I have over 5 years of experience in React development and I'm passionate about creating user-friendly interfaces.",
+        "My background includes working with TypeScript, Node.js, and various cloud platforms like AWS.",
+        "I enjoy collaborating with cross-functional teams and have led several successful projects from conception to deployment.",
+        "I'm particularly interested in this role because it aligns with my career goals in frontend development.",
+        "I believe my experience in agile development and problem-solving skills would be valuable to your team."
+      ];
+      
+      // Select a random transcript
+      let transcript = mockTranscripts[Math.floor(Math.random() * mockTranscripts.length)];
+      
+      // Apply auto-correction
+      transcript = transcript
+        .replace(/\bum\b|\buh\b|\ber\b|\blike\b|\byou know\b/gi, '') // Remove filler words
+        .replace(/\s+/g, ' ') // Remove extra spaces
+        .trim();
+      
+      // Add user message
+      handleSendMessage(transcript);
+      
+    } catch (error) {
+      console.error('Error processing audio:', error);
     }
   };
 
-  const stopPlayback = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsPlaying(false);
-    }
-  };
+  const handleSendMessage = (message: string) => {
+    if (!message.trim()) return;
 
-  const retakeRecording = () => {
-    setAudioBlob(null);
-    setIsRecording(false);
-    setIsPaused(false);
-    stopPlayback();
-  };
-
-  const submitResponse = () => {
-    const response = {
-      questionId: currentQuestion.id,
-      audioBlob: audioBlob,
-      timestamp: new Date().toISOString(),
-      duration: audioBlob ? 0 : 0 // You might want to calculate actual duration
+    // Add user message
+    const userMessage: ConversationMessage = {
+      id: uuidv4(),
+      sender: 'candidate',
+      message: message,
+      timestamp: new Date()
     };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    
+    // Simulate AI thinking
+    setIsTyping(true);
+    
+    // Determine if we should move to the next question or end the assessment
+    setTimeout(() => {
+      setIsTyping(false);
+      
+      const nextQuestionIndex = currentQuestionIndex + 1;
+      
+      if (nextQuestionIndex < config.questions.length) {
+        // Send next question
+        const aiMessage: ConversationMessage = {
+          id: uuidv4(),
+          sender: 'ai',
+          message: config.questions[nextQuestionIndex],
+          timestamp: new Date()
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+        setCurrentQuestionIndex(nextQuestionIndex);
+      } else {
+        // End assessment
+        const finalMessage: ConversationMessage = {
+          id: uuidv4(),
+          sender: 'ai',
+          message: "Thank you for completing the assessment. Your responses have been recorded and will be analyzed. The results will be available shortly.",
+          timestamp: new Date()
+        };
+        
+        setMessages(prev => [...prev, finalMessage]);
+        
+        // Complete assessment after a short delay
+        setTimeout(() => {
+          const assessmentResult = {
+            questionsAnswered: config.questions.length,
+            totalQuestions: config.questions.length,
+            duration: Math.floor((Date.now() - assessmentStartTime) / 1000 / 60),
+            securityAlertsCount: securityAlerts.length,
+            securityAlerts,
+            messages,
+            terminationReason: null
+          };
+          
+          onAssessmentComplete(assessmentResult);
+        }, 2000);
+      }
+    }, 1500 + Math.random() * 1000);
+  };
 
-    const newResponses = [...responses, response];
-    setResponses(newResponses);
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(inputMessage);
+    }
+  };
 
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else {
-      // Complete assessment
+  const handleSecurityAlert = (alert: any) => {
+    setSecurityAlerts(prev => [...prev, alert]);
+    
+    // Check if we need to terminate the assessment
+    if (alert.severity === 'high' || securityAlerts.length >= config.maxViolations) {
       const assessmentResult = {
-        questionsAnswered: newResponses.length,
-        totalQuestions: questions.length,
-        duration: config.duration,
-        securityAlertsCount: 0,
-        securityAlerts: [],
-        responses: newResponses,
-        terminationReason: null
+        questionsAnswered: currentQuestionIndex,
+        totalQuestions: config.questions.length,
+        duration: Math.floor((Date.now() - assessmentStartTime) / 1000 / 60),
+        securityAlertsCount: securityAlerts.length + 1,
+        securityAlerts: [...securityAlerts, alert],
+        messages,
+        terminationReason: 'Session terminated due to security violations'
       };
+      
       onAssessmentComplete(assessmentResult);
     }
   };
 
-  const handleTimeUp = () => {
-    if (isRecording) {
-      stopRecording();
-    }
-    // Auto-submit when time is up
-    setTimeout(() => {
-      submitResponse();
-    }, 1000);
+  const handleFaceDetectionUpdate = (data: any) => {
+    setFaceDetectionData(data);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-4xl w-full">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">Voice Assessment</h1>
+            <h1 className="text-2xl font-bold text-gray-900">AI Interview</h1>
             <Badge variant="outline" className="text-sm">
-              Question {currentQuestionIndex + 1} of {questions.length}
+              Question {currentQuestionIndex + 1} of {config.questions.length}
             </Badge>
           </div>
-          
-          <AssessmentTimer
-            durationMinutes={currentQuestion?.timeLimit / 60 || 0}
-            onTimeUp={handleTimeUp}
-            isActive={true}
-            startTime={Date.now()}
-          />
         </div>
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Question Panel */}
+          {/* Chat Panel */}
           <div className="lg:col-span-2">
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle className="text-lg">Question {currentQuestionIndex + 1}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-gray-800 leading-relaxed">
-                    {currentQuestion?.text}
-                  </p>
-                </div>
-
-                {/* Recording Controls */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-center gap-4">
-                    {!isRecording && !audioBlob && (
-                      <Button
-                        onClick={startRecording}
-                        size="lg"
-                        className="bg-red-600 hover:bg-red-700 text-white px-8"
-                      >
-                        <Mic className="h-5 w-5 mr-2" />
-                        Start Recording
-                      </Button>
-                    )}
-
-                    {isRecording && (
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={pauseRecording}
-                          variant="outline"
-                          size="lg"
-                        >
-                          {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-                          {isPaused ? 'Resume' : 'Pause'}
-                        </Button>
-                        <Button
-                          onClick={stopRecording}
-                          size="lg"
-                          className="bg-gray-600 hover:bg-gray-700"
-                        >
-                          <MicOff className="h-5 w-5 mr-2" />
-                          Stop Recording
-                        </Button>
-                      </div>
-                    )}
-
-                    {audioBlob && !isRecording && (
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={isPlaying ? stopPlayback : playRecording}
-                          variant="outline"
-                          size="lg"
-                        >
-                          {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                          {isPlaying ? 'Stop' : 'Play'}
-                        </Button>
-                        <Button
-                          onClick={retakeRecording}
-                          variant="outline"
-                          size="lg"
-                        >
-                          <RotateCcw className="h-5 w-5 mr-2" />
-                          Retake
-                        </Button>
-                        <Button
-                          onClick={submitResponse}
-                          size="lg"
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          Submit Response
-                        </Button>
-                      </div>
-                    )}
+            <Card className="h-[500px] sm:h-[600px] flex flex-col">
+              {/* Chat Header */}
+              <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+                    <Bot className="w-6 h-6 text-white" />
                   </div>
-
-                  {/* Recording Status */}
-                  {isRecording && (
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-2 text-red-600">
-                        <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
-                        <span className="font-medium">
-                          {isPaused ? 'Recording Paused' : 'Recording...'}
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">AI Interviewer</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {isTyping ? (
+                        <span className="flex items-center gap-1">
+                          <span>Typing</span>
+                          <div className="flex space-x-1">
+                            <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                          </div>
                         </span>
+                      ) : 'Ready to chat'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex gap-3 ${message.sender === 'candidate' ? 'flex-row-reverse' : ''}`}
+                  >
+                    <div className={`
+                      w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
+                      ${message.sender === 'ai' 
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600' 
+                        : 'bg-gray-600 dark:bg-gray-500'
+                      }
+                    `}>
+                      {message.sender === 'ai' ? (
+                        <Bot className="w-4 h-4 text-white" />
+                      ) : (
+                        <User className="w-4 h-4 text-white" />
+                      )}
+                    </div>
+                    <div className={`
+                      max-w-[85%] sm:max-w-[80%] p-3 rounded-lg
+                      ${message.sender === 'ai' 
+                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white' 
+                        : 'bg-blue-600 text-white'
+                      }
+                    `}>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.message}</p>
+                      <span className="text-xs opacity-70 mt-1 block">
+                        {new Date(message.timestamp).toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                
+                {isTyping && (
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+                      <Bot className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
 
-                  {audioBlob && (
-                    <div className="text-center">
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Recording Complete
-                      </Badge>
-                    </div>
-                  )}
+              {/* Input */}
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex gap-2">
+                  <Button
+                    onClick={toggleRecording}
+                    variant={isRecording ? "destructive" : "outline"}
+                    className="px-3"
+                    disabled={isTyping}
+                  >
+                    {isRecording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                  </Button>
+                  <div className="flex-1">
+                    <textarea
+                      ref={textareaRef}
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Type your response..."
+                      className="w-full resize-none px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[40px] max-h-[120px] bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      rows={1}
+                      disabled={isTyping || isRecording}
+                    />
+                  </div>
+                  <Button 
+                    onClick={() => handleSendMessage(inputMessage)}
+                    disabled={!inputMessage.trim() || isTyping || isRecording}
+                    className="px-4"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
                 </div>
-              </CardContent>
+                
+                {isRecording && (
+                  <div className="mt-2 flex items-center justify-center gap-2 text-red-600">
+                    <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium">Recording...</span>
+                  </div>
+                )}
+              </div>
             </Card>
           </div>
 
@@ -365,13 +432,13 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Completed</span>
-                    <span>{currentQuestionIndex} / {questions.length}</span>
+                    <span>{currentQuestionIndex} / {config.questions.length}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                       style={{
-                        width: `${(currentQuestionIndex / questions.length) * 100}%`
+                        width: `${(currentQuestionIndex / config.questions.length) * 100}%`
                       }}
                     ></div>
                   </div>
@@ -382,24 +449,24 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
             {/* Video Monitor */}
             <FloatingVideoMonitor 
               isActive={true}
-              onSecurityAlert={(alert) => console.log('Security alert:', alert)}
-              onFaceDetectionUpdate={(data) => console.log('Face detection update:', data)}
+              onSecurityAlert={handleSecurityAlert}
+              onFaceDetectionUpdate={handleFaceDetectionUpdate}
               onFaceAwayViolation={() => {
                 const result = {
-                  questionsAnswered: responses.length,
-                  totalQuestions: questions.length,
-                  duration: config.duration,
+                  questionsAnswered: currentQuestionIndex,
+                  totalQuestions: config.questions.length,
+                  duration: Math.floor((Date.now() - assessmentStartTime) / 1000 / 60),
                   securityAlertsCount: 2,
                   securityAlerts: [
                     {
                       id: Date.now().toString(),
                       type: 'face_not_detected',
-                      message: 'Face not detected for 30 seconds',
+                      message: 'Face not detected for 30 seconds (2/2)',
                       timestamp: new Date(),
                       severity: 'high'
                     }
                   ],
-                  responses,
+                  messages,
                   terminationReason: 'Session terminated: Looked away from camera twice'
                 };
                 onAssessmentComplete(result);
@@ -412,11 +479,11 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                 <CardTitle className="text-sm">Instructions</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-gray-600 space-y-2">
-                <p>• Click "Start Recording" to begin</p>
-                <p>• You can pause and resume recording</p>
-                <p>• Listen to your response before submitting</p>
-                <p>• You can retake your response if needed</p>
-                <p>• Submit before time runs out</p>
+                <p>• Click the microphone icon to toggle recording</p>
+                <p>• Or type your response in the text box</p>
+                <p>• Keep your face visible to the camera</p>
+                <p>• Answer all questions to complete the assessment</p>
+                <p>• Stay focused on the screen during the assessment</p>
               </CardContent>
             </Card>
           </div>

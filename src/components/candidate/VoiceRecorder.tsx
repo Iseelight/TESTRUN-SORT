@@ -111,14 +111,16 @@ export function VoiceRecorder({ onRecordingComplete, isDisabled = false }: Voice
       mediaRecorderRef.current = mediaRecorder;
 
       const chunks: BlobPart[] = [];
+      audioChunksRef.current = [];
+      
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          chunks.push(event.data);
+          audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/wav' });
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         setAudioBlob(blob);
         const url = URL.createObjectURL(blob);
         setAudioUrl(url);

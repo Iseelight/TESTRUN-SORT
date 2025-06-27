@@ -9,7 +9,12 @@ interface FloatingVideoMonitorProps {
   onFaceAwayViolation: () => void;
 }
 
-export function FloatingVideoMonitor({ onSecurityAlert, onFaceDetectionUpdate, isActive, onFaceAwayViolation }: FloatingVideoMonitorProps) {
+export function FloatingVideoMonitor({ 
+  onSecurityAlert, 
+  onFaceDetectionUpdate, 
+  isActive, 
+  onFaceAwayViolation 
+}: FloatingVideoMonitorProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
