@@ -5,7 +5,6 @@ import { Header } from '../components/layout/Header';
 import { ApplicationForm } from '../components/candidate/ApplicationForm';
 import { AssessmentInterface } from '../components/assessment/AssessmentInterface';
 import { ResultsPage } from '../components/candidate/ResultsPage';
-import { SessionTerminatedModal } from '../components/candidate/SessionTerminatedModal';
 import { LoginModal } from '../components/auth/LoginModal';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -129,10 +128,6 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
   const [applicationData, setApplicationData] = useState<any>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
-  const [sessionTerminated, setSessionTerminated] = useState(false);
-  const [terminationReason, setTerminationReason] = useState('');
-  const [sessionViolations, setSessionViolations] = useState<any[]>([]);
-  const [jobs] = useState(MOCK_JOBS);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cvAnalysisProgress, setCvAnalysisProgress] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
@@ -188,7 +183,7 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
   }, [directJobId, jobs, user]);
 
   // Filter jobs based on search term
-  const filteredJobs = jobs.filter(job => 
+  const filteredJobs = MOCK_JOBS.filter(job => 
     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -283,17 +278,6 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
       // Check if assessment was terminated
       const wasTerminated = !!assessmentResult.terminationReason;
       
-      if (wasTerminated) {
-        setSessionTerminated(true);
-        setTerminationReason(assessmentResult.terminationReason || 'Assessment terminated due to security violations');
-        setSessionViolations(assessmentResult.securityAlerts.map(alert => ({
-          type: alert.type,
-          timestamp: alert.timestamp,
-          count: 1,
-          severity: alert.severity === 'high' ? 'critical' : 'warning'
-        })));
-      }
-      
       // Determine status based on score and termination reason
       let initialStatus = 'pending';
       
@@ -376,20 +360,15 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
     // Check if job allows retakes
     if (selectedJob && selectedJob.allow_retake) {
       // Reset session state
-      setSessionTerminated(false);
-      setSessionViolations([]);
-      setTerminationReason('');
       // Skip directly to assessment without refilling the form
       setStep('assessment');
     } else {
       // If retakes not allowed, go back to jobs
-      setSessionTerminated(false);
       setStep('jobs');
     }
   };
 
   const handleExitSession = () => {
-    setSessionTerminated(false);
     setStep('jobs');
   };
 
@@ -740,15 +719,6 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
           />
         )}
       </div>
-
-      {/* Session Terminated Modal */}
-      <SessionTerminatedModal
-        isOpen={sessionTerminated}
-        reason={terminationReason}
-        violations={sessionViolations}
-        onRetakeSession={handleRetakeSession}
-        onExitSession={handleExitSession}
-      />
 
       {/* Login Modal */}
       <LoginModal

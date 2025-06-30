@@ -443,26 +443,14 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
     setTimeout(() => {
       setIsTyping(false);
 
-      // Add a brief acknowledgment message
-      const ackMessage: ConversationMessage = {
-        id: uuidv4(),
-        sender: "ai",
-        message: "Thank you for your response. Let me ask you the next question.",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, ackMessage]);
-
-      speakText(ackMessage.message, () => {
-        const nextQuestionIndex = currentQuestionIndex + 1;
-        if (nextQuestionIndex < config.questions.length) {
-          setUserHasResponded(false);
-          setWaitingForUserResponse(false);
-          setTimeout(() => askQuestion(nextQuestionIndex), 500);
-        } else {
-          endAssessment("completed");
-        }
-      });
+      const nextQuestionIndex = currentQuestionIndex + 1;
+      if (nextQuestionIndex < config.questions.length) {
+        setUserHasResponded(false);
+        setWaitingForUserResponse(false);
+        setTimeout(() => askQuestion(nextQuestionIndex), 500);
+      } else {
+        endAssessment("completed");
+      }
     }, 1500);
   };
 
@@ -937,13 +925,13 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                     <div
                       className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-300"
                       style={{
-                        width: `${((currentQuestionIndex + 1) / config.questions.length) * 100}%`,
+                        width: `${(questionsAnswered / config.questions.length) * 100}%`,
                       }}
                     ></div>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500">
                     <span>Questions Answered: {questionsAnswered}</span>
-                    <span>{Math.round(((currentQuestionIndex + 1) / config.questions.length) * 100)}%</span>
+                    <span>{Math.round((questionsAnswered / config.questions.length) * 100)}%</span>
                   </div>
                 </div>
               </CardContent>
@@ -955,6 +943,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
               onSecurityAlert={handleSecurityAlert}
               onFaceDetectionUpdate={handleFaceDetectionUpdate}
               onFaceAwayViolation={handleFaceAwayViolation}
+              hideTerminationModal={true}
             />
 
             {/* Instructions */}
