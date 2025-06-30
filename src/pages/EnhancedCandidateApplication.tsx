@@ -132,6 +132,7 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
   const [cvAnalysisProgress, setCvAnalysisProgress] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [jobs] = useState(MOCK_JOBS);
   const jobsPerPage = 6;
 
   const mockBackend = MockBackendService.getInstance();
@@ -183,7 +184,7 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
   }, [directJobId, jobs, user]);
 
   // Filter jobs based on search term
-  const filteredJobs = MOCK_JOBS.filter(job => 
+  const filteredJobs = jobs.filter(job => 
     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -359,7 +360,6 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
   const handleRetakeSession = () => {
     // Check if job allows retakes
     if (selectedJob && selectedJob.allow_retake) {
-      // Reset session state
       // Skip directly to assessment without refilling the form
       setStep('assessment');
     } else {
