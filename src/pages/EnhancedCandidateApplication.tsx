@@ -143,7 +143,7 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
 
   // Assessment configuration
   const assessmentConfig: AssessmentConfig = {
-    duration: 5, // 5 minutes
+    duration: 10, // 10 minutes
     questions: [
       "Tell me about yourself and why you're interested in this position.",
       "What are your greatest strengths and how do they relate to this role?",
@@ -255,21 +255,6 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
     if (!selectedJob || !applicationData) return;
 
     try {
-      // Check if assessment was terminated
-      const wasTerminated = !!assessmentResult.terminationReason;
-      
-      if (wasTerminated) {
-        setSessionTerminated(true);
-        setTerminationReason(assessmentResult.terminationReason || 'Assessment terminated due to security violations');
-        setSessionViolations(assessmentResult.securityAlerts.map(alert => ({
-          type: alert.type,
-          timestamp: alert.timestamp,
-          count: 1,
-          severity: alert.severity === 'high' ? 'critical' : 'warning'
-        })));
-        return;
-      }
-      
       // Generate realistic scores based on assessment performance
       const job = selectedJob;
       const baseScore = 70 + Math.random() * 25; // 70-95% range
@@ -295,11 +280,31 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
          communicationScore * job.skill_weights.communication) / 100
       );
       
-      // Determine initial status based on score and job settings
+      // Determine initial status based on score, job settings, and termination reason
       let initialStatus = 'pending';
       
-      if (overallScore < job.cutoff_percentage) {
+      // Check if assessment was terminated
+      const wasTerminated = !!assessmentResult.terminationReason;
+      
+      if (wasTerminated) {
+        setSessionTerminated(true);
+        setTerminationReason(assessmentResult.terminationReason || 'Assessment terminated due to security violations');
+        setSessionViolations(assessmentResult.securityAlerts.map(alert => ({
+          type: alert.type,
+          timestamp: alert.timestamp,
+          count: 1,
+          severity: alert.severity === 'high' ? 'critical' : 'warning'
+        })));
+      }
+      
+      // Determine status based on score and termination reason
+      if (assessmentResult.terminationReason === "Session terminated due to security violations") {
         initialStatus = 'rejected';
+      } else if (overallScore < job.cutoff_percentage) {
+        initialStatus = 'rejected';
+      } else if (assessmentResult.terminationReason === "Session terminated due to time limit exceeded") {
+        // For timeout, check if they passed enough questions to meet the cutoff
+        initialStatus = overallScore >= job.cutoff_percentage ? 'pending' : 'rejected';
       }
 
       // Generate enhanced feedback
@@ -322,7 +327,13 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
           'Consider gaining additional experience in system design and scalability',
           'Excellent assessment performance - maintain this level of professionalism'
         ],
-        overallAssessment: `Outstanding candidate with excellent technical skills and professional demeanor. Performed exceptionally well in the secure assessment environment with ${assessmentResult.securityAlertsCount} security alerts detected. Demonstrated strong technical knowledge, clear communication, and maintained excellent focus throughout the monitored session. ${overallScore >= job.cutoff_percentage ? 'Significantly exceeds the minimum requirements for this position and shows exceptional potential for success in our team.' : 'Shows strong potential despite falling slightly below the minimum score threshold.'} The comprehensive monitoring data confirms authentic and professional assessment conduct.`
+        overallAssessment: `${wasTerminated ? 
+          assessmentResult.terminationReason === "Session terminated due to security violations" ?
+            "Assessment terminated due to security violations. The candidate failed to maintain proper camera presence during the assessment, which is a requirement for our secure assessment process." :
+            assessmentResult.terminationReason === "Session terminated due to time limit exceeded" ?
+            `Assessment time limit exceeded. The candidate completed ${assessmentResult.questionsAnswered} out of ${assessmentResult.totalQuestions} questions before time ran out. Based on the completed portion, the candidate ${overallScore >= job.cutoff_percentage ? "demonstrated sufficient skills to meet our minimum requirements" : "did not demonstrate sufficient skills to meet our minimum requirements"}.` :
+            "Assessment completed successfully." :
+          "Outstanding candidate with excellent technical skills and professional demeanor. Performed exceptionally well in the secure assessment environment."} ${assessmentResult.securityAlertsCount > 0 ? `${assessmentResult.securityAlertsCount} security alerts were detected during the assessment.` : "No security alerts were detected during the assessment."} ${overallScore >= job.cutoff_percentage ? 'Significantly exceeds the minimum requirements for this position and shows exceptional potential for success in our team.' : 'Shows potential but falls below the minimum score threshold required for this position.'}`
       };
 
       const candidateData = {
@@ -352,6 +363,8 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
       // Create candidate record
       const newCandidate = await mockBackend.createCandidate(candidateData);
       setCandidate(newCandidate);
+      
+      // Always move to results page, even for terminated sessions
       setStep('results');
       
     } catch (error) {
@@ -574,7 +587,7 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
                             <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Secure AI Assessment</span>
                           </div>
                           <p className="text-xs text-blue-700 dark:text-blue-300">
-                            5-minute monitored assessment with face detection, screen lock, and audio recording.
+                            10-minute monitored assessment with face detection, screen lock, and audio recording.
                           </p>
                         </div>
                       </div>

@@ -1,14 +1,11 @@
-"use client"
-
-import type React from "react"
-import { useState, useEffect, useRef, useCallback } from "react"
-import { Mic, MicOff, Send, Bot, Volume2, Clock } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { Button } from "../ui/button"
-import { Badge } from "../ui/badge"
-import { FloatingVideoMonitor } from "./FloatingVideoMonitor"
-import type { ConversationMessage, FaceDetectionData } from "../../types"
-import { v4 as uuidv4 } from "uuid"
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Mic, MicOff, Send, Bot, Volume2, Clock } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { FloatingVideoMonitor } from "./FloatingVideoMonitor";
+import type { ConversationMessage, FaceDetectionData } from "../../types";
+import { v4 as uuidv4 } from "uuid";
 
 interface AssessmentConfig {
   duration: number
@@ -31,34 +28,37 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
   onAssessmentComplete,
   onTerminate,
 }) => {
-  const [messages, setMessages] = useState<ConversationMessage[]>([])
-  const [inputMessage, setInputMessage] = useState("")
-  const [isRecording, setIsRecording] = useState(false)
-  const [isTyping, setIsTyping] = useState(false)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [assessmentStartTime] = useState(Date.now())
-  const [timerStartTime, setTimerStartTime] = useState<number | null>(null)
-  const [timeRemaining, setTimeRemaining] = useState(15 * 60) // 15 minutes in seconds
-  const [timerActive, setTimerActive] = useState(false)
-  const [securityAlerts, setSecurityAlerts] = useState<any[]>([])
-  const [faceDetectionData, setFaceDetectionData] = useState<FaceDetectionData | null>(null)
-  const [interimTranscript, setInterimTranscript] = useState("")
-  const [isAISpeaking, setIsAISpeaking] = useState(false)
-  const [isMicMuted, setIsMicMuted] = useState(true)
-  const [waitingForUserResponse, setWaitingForUserResponse] = useState(false)
-  const [userHasResponded, setUserHasResponded] = useState(false)
-  const [isAssessmentTerminated, setIsAssessmentTerminated] = useState(false)
-  const [terminationReason, setTerminationReason] = useState<"completed" | "violation" | "timeout" | null>(null)
-  const [showTerminationLoader, setShowTerminationLoader] = useState(false)
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [assessmentStartTime] = useState(Date.now());
+  const [timerStartTime, setTimerStartTime] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState(10 * 60); // 10 minutes in seconds
+  const [timerActive, setTimerActive] = useState(false);
+  const [securityAlerts, setSecurityAlerts] = useState<any[]>([]);
+  const [faceDetectionData, setFaceDetectionData] = useState<FaceDetectionData | null>(null);
+  const [interimTranscript, setInterimTranscript] = useState("");
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [isMicMuted, setIsMicMuted] = useState(true);
+  const [waitingForUserResponse, setWaitingForUserResponse] = useState(false);
+  const [userHasResponded, setUserHasResponded] = useState(false);
+  const [isAssessmentTerminated, setIsAssessmentTerminated] = useState(false);
+  const [terminationReason, setTerminationReason] = useState<"completed" | "violation" | "timeout" | null>(null);
+  const [showTerminationLoader, setShowTerminationLoader] = useState(false);
+  const [questionTimeoutRef, setQuestionTimeoutRef] = useState<NodeJS.Timeout | null>(null);
+  const [assessmentInitialized, setAssessmentInitialized] = useState(false);
+  const [questionsAnswered, setQuestionsAnswered] = useState(0);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioChunksRef = useRef<Blob[]>([])
-  const streamRef = useRef<MediaStream | null>(null)
-  const speechRecognitionRef = useRef<any>(null)
-  const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null)
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const speechRecognitionRef = useRef<any>(null);
+  const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Timer effect
   useEffect(() => {
@@ -67,84 +67,89 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
         setTimeRemaining((prev) => {
           if (prev <= 1) {
             // Time's up!
-            endAssessment("timeout")
-            return 0
+            endAssessment("timeout");
+            return 0;
           }
-          return prev - 1
-        })
-      }, 1000)
+          return prev - 1;
+        });
+      }, 1000);
     } else {
       if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current)
-        timerIntervalRef.current = null
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
       }
     }
 
     return () => {
       if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current)
+        clearInterval(timerIntervalRef.current);
       }
-    }
-  }, [timerActive, timeRemaining, isAssessmentTerminated])
+    };
+  }, [timerActive, timeRemaining, isAssessmentTerminated]);
 
   // Format time for display
   const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" })
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, [messages, isTyping])
+  }, [messages, isTyping]);
 
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = "auto"
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px"
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
     }
-  }, [inputMessage])
+  }, [inputMessage]);
 
-  // Initialize assessment with first question
+  // Initialize assessment with first question - FIXED: Only run once
   useEffect(() => {
-    if (isAssessmentTerminated) return
+    if (isAssessmentTerminated || assessmentInitialized) return;
+
+    setAssessmentInitialized(true);
 
     setTimeout(() => {
       const initialMessage: ConversationMessage = {
         id: uuidv4(),
         sender: "ai",
         message:
-          "Welcome to your AI assessment! I'll be asking you questions over the next 15 minutes. Please ensure you remain visible on camera throughout the assessment. Let's begin with the first question.",
+          "Welcome to your AI assessment! I'll be asking you questions over the next 10 minutes. Please ensure you remain visible on camera throughout the assessment. Let's begin with the first question.",
         timestamp: new Date(),
-      }
+      };
 
-      setMessages([initialMessage])
+      setMessages([initialMessage]);
 
       speakText(initialMessage.message, () => {
         setTimeout(() => {
-          askQuestion(0)
-        }, 1000)
-      })
-    }, 1000)
+          askQuestion(0);
+        }, 1000);
+      });
+    }, 1000);
 
-    initializeAudio()
+    initializeAudio();
 
     return () => {
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop())
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
       if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel()
+        window.speechSynthesis.cancel();
       }
       if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current)
+        clearInterval(timerIntervalRef.current);
       }
-    }
-  }, [config.questions])
+      if (questionTimeoutRef) {
+        clearTimeout(questionTimeoutRef);
+      }
+    };
+  }, []); // Empty dependency array to run only once
 
   const initializeAudio = async () => {
     try {
@@ -154,212 +159,229 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
           noiseSuppression: true,
           autoGainControl: true,
         },
-      })
+      });
 
-      streamRef.current = stream
+      streamRef.current = stream;
 
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4",
-      })
+      });
 
-      mediaRecorderRef.current = mediaRecorder
+      mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data)
+          audioChunksRef.current.push(event.data);
         }
-      }
+      };
 
       mediaRecorder.onstop = () => {
-        processAudioRecording()
-      }
+        processAudioRecording();
+      };
 
-      initializeSpeechRecognition()
+      initializeSpeechRecognition();
     } catch (error) {
-      console.error("Error accessing microphone:", error)
+      console.error("Error accessing microphone:", error);
     }
-  }
+  };
 
   const initializeSpeechRecognition = () => {
     if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
-      const recognition = new SpeechRecognition()
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      const recognition = new SpeechRecognition();
 
-      recognition.continuous = true
-      recognition.interimResults = true
-      recognition.lang = "en-US"
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
 
       recognition.onresult = (event: any) => {
-        let finalTranscript = ""
-        let interimText = ""
+        let finalTranscript = "";
+        let interimText = "";
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript
+          const transcript = event.results[i][0].transcript;
+
           if (event.results[i].isFinal) {
-            finalTranscript += transcript
+            finalTranscript += transcript;
           } else {
-            interimText += transcript
+            interimText += transcript;
           }
         }
 
         if (interimText) {
-          setInterimTranscript(interimText)
+          setInterimTranscript(interimText);
+
           const interimMessage: ConversationMessage = {
             id: "interim-message",
             sender: "candidate",
             message: interimText,
             timestamp: new Date(),
             isInterim: true,
-          }
+          };
 
           setMessages((prev) => {
-            const filtered = prev.filter((msg) => msg.id !== "interim-message")
-            return [...filtered, interimMessage]
-          })
+            const filtered = prev.filter((msg) => msg.id !== "interim-message");
+            return [...filtered, interimMessage];
+          });
         }
 
         if (finalTranscript) {
-          handleSendMessage(finalTranscript)
-          stopRecording()
+          handleSendMessage(finalTranscript);
+          stopRecording();
         }
-      }
+      };
 
       recognition.onerror = (event: any) => {
-        console.error("Speech recognition error:", event.error)
-      }
+        console.error("Speech recognition error:", event.error);
+      };
 
       recognition.onend = () => {
-        setIsRecording(false)
-      }
+        setIsRecording(false);
+      };
 
-      speechRecognitionRef.current = recognition
+      speechRecognitionRef.current = recognition;
     }
-  }
+  };
 
   const speakText = (text: string, onComplete?: () => void) => {
     if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel()
-      setIsAISpeaking(true)
-      setIsMicMuted(true)
+      window.speechSynthesis.cancel();
+      setIsAISpeaking(true);
+      setIsMicMuted(true);
 
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.rate = 0.9
-      utterance.pitch = 1
-      utterance.volume = 0.8
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 0.8;
 
-      const voices = speechSynthesis.getVoices()
+      const voices = speechSynthesis.getVoices();
       const preferredVoice = voices.find(
         (voice) => voice.name.includes("Google") || voice.name.includes("Microsoft") || voice.name.includes("Natural"),
-      )
+      );
 
       if (preferredVoice) {
-        utterance.voice = preferredVoice
+        utterance.voice = preferredVoice;
       }
 
       utterance.onend = () => {
-        setIsAISpeaking(false)
+        setIsAISpeaking(false);
         if (onComplete) {
-          onComplete()
+          onComplete();
         }
-      }
+      };
 
       utterance.onerror = () => {
-        setIsAISpeaking(false)
+        setIsAISpeaking(false);
         if (onComplete) {
-          onComplete()
+          onComplete();
         }
-      }
+      };
 
-      speechSynthesisRef.current = utterance
-      window.speechSynthesis.speak(utterance)
+      speechSynthesisRef.current = utterance;
+      window.speechSynthesis.speak(utterance);
     } else {
-      setIsAISpeaking(false)
+      setIsAISpeaking(false);
       if (onComplete) {
-        onComplete()
+        onComplete();
       }
     }
-  }
+  };
 
   const askQuestion = (questionIndex: number) => {
-    if (isAssessmentTerminated) return
+    if (isAssessmentTerminated || waitingForUserResponse) return;
 
     if (questionIndex >= config.questions.length) {
-      endAssessment("completed")
-      return
+      endAssessment("completed");
+      return;
     }
 
     // Start timer when first question is asked
     if (questionIndex === 0 && !timerActive) {
-      setTimerStartTime(Date.now())
-      setTimerActive(true)
+      setTimerStartTime(Date.now());
+      setTimerActive(true);
     }
 
-    setCurrentQuestionIndex(questionIndex)
+    setCurrentQuestionIndex(questionIndex);
+    const question = config.questions[questionIndex];
 
-    const question = config.questions[questionIndex]
     const questionMessage: ConversationMessage = {
       id: uuidv4(),
       sender: "ai",
       message: question,
       timestamp: new Date(),
-    }
+    };
 
-    setMessages((prev) => [...prev, questionMessage])
-    setWaitingForUserResponse(false)
-    setUserHasResponded(false)
+    setMessages((prev) => [...prev, questionMessage]);
+    setWaitingForUserResponse(false);
+    setUserHasResponded(false);
 
     speakText(question, () => {
-      setWaitingForUserResponse(true)
-      setIsMicMuted(false)
-    })
-  }
+      setWaitingForUserResponse(true);
+      setIsMicMuted(false);
+
+      // Set 30-second timeout for auto-advance
+      const timeout = setTimeout(() => {
+        if (!userHasResponded && !isAssessmentTerminated) {
+          // Auto-advance to next question if user hasn't responded
+          const nextQuestionIndex = questionIndex + 1;
+          if (nextQuestionIndex < config.questions.length) {
+            askQuestion(nextQuestionIndex);
+          } else {
+            endAssessment("completed");
+          }
+        }
+      }, 30000); // 30 seconds
+
+      setQuestionTimeoutRef(timeout);
+    });
+  };
 
   const toggleMicrophone = () => {
     if (isAISpeaking || isAssessmentTerminated) {
-      return
+      return;
     }
 
     if (isRecording) {
       // Currently recording, stop it
-      stopRecording()
-      setIsMicMuted(true)
+      stopRecording();
+      setIsMicMuted(true);
     } else {
       // Not recording, start it
-      startRecording()
-      setIsMicMuted(false)
+      startRecording();
+      setIsMicMuted(false);
     }
-  }
+  };
 
   const startRecording = () => {
-    if (isAssessmentTerminated) return
+    if (isAssessmentTerminated) return;
 
     if (!speechRecognitionRef.current) {
-      initializeSpeechRecognition()
+      initializeSpeechRecognition();
     }
 
     if (speechRecognitionRef.current && !isAISpeaking) {
-      setIsRecording(true)
-      setInterimTranscript("")
-      speechRecognitionRef.current.start()
+      setIsRecording(true);
+      setInterimTranscript("");
+      speechRecognitionRef.current.start();
     }
-  }
+  };
 
   const stopRecording = () => {
     if (speechRecognitionRef.current) {
-      speechRecognitionRef.current.stop()
+      speechRecognitionRef.current.stop();
     }
-    setIsRecording(false)
-  }
+    setIsRecording(false);
+  };
 
   const processAudioRecording = async () => {
-    if (audioChunksRef.current.length === 0 || isAssessmentTerminated) return
+    if (audioChunksRef.current.length === 0 || isAssessmentTerminated) return;
 
     try {
       const audioBlob = new Blob(audioChunksRef.current, {
         type: "audio/webm",
-      })
+      });
 
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       const mockTranscripts = [
         "I have over 5 years of experience in React development and I'm passionate about creating user-friendly interfaces.",
@@ -367,26 +389,32 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
         "I enjoy collaborating with cross-functional teams and have led several successful projects from conception to deployment.",
         "I'm particularly interested in this role because it aligns with my career goals in frontend development.",
         "I believe my experience in agile development and problem-solving skills would be valuable to your team.",
-      ]
+      ];
 
-      let transcript = mockTranscripts[Math.floor(Math.random() * mockTranscripts.length)]
+      let transcript = mockTranscripts[Math.floor(Math.random() * mockTranscripts.length)];
 
       transcript = transcript
         .replace(/\bum\b|\buh\b|\ber\b|\blike\b|\byou know\b/gi, "")
         .replace(/\s+/g, " ")
-        .trim()
+        .trim();
 
-      handleSendMessage(transcript)
+      handleSendMessage(transcript);
     } catch (error) {
-      console.error("Error processing audio:", error)
+      console.error("Error processing audio:", error);
     }
-  }
+  };
 
   const handleSendMessage = (message: string) => {
-    if (!message.trim() || isAssessmentTerminated) return
+    if (!message.trim() || isAssessmentTerminated) return;
+
+    // Clear question timeout since user is responding
+    if (questionTimeoutRef) {
+      clearTimeout(questionTimeoutRef);
+      setQuestionTimeoutRef(null);
+    }
 
     // Remove interim message
-    setMessages((prev) => prev.filter((msg) => msg.id !== "interim-message"))
+    setMessages((prev) => prev.filter((msg) => msg.id !== "interim-message"));
 
     // Add user message
     const userMessage: ConversationMessage = {
@@ -395,90 +423,74 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
       message: message,
       timestamp: new Date(),
       audioBlob: new Blob(audioChunksRef.current, { type: "audio/webm" }),
-    }
+    };
 
-    setMessages((prev) => [...prev, userMessage])
-    setInputMessage("")
-    setWaitingForUserResponse(false)
-    setUserHasResponded(true)
+    setMessages((prev) => [...prev, userMessage]);
+    setInputMessage("");
+    setWaitingForUserResponse(false);
+    setUserHasResponded(true);
+
+    // Update questions answered count
+    setQuestionsAnswered((prev) => prev + 1);
 
     // Clear audio chunks for next recording
-    audioChunksRef.current = []
+    audioChunksRef.current = [];
 
     // Simulate AI thinking
-    setIsTyping(true)
+    setIsTyping(true);
 
     // AI acknowledgment and automatic progression
-    setTimeout(
-      () => {
-        if (isAssessmentTerminated) return
+    setTimeout(() => {
+      setIsTyping(false);
 
-        setIsTyping(false)
+      // Add a brief acknowledgment message
+      const ackMessage: ConversationMessage = {
+        id: uuidv4(),
+        sender: "ai",
+        message: "Thank you for your response. Let me ask you the next question.",
+        timestamp: new Date(),
+      };
 
-        const acknowledgments = [
-          "Thank you for your response.",
-          "I appreciate your answer.",
-          "Thank you for sharing that.",
-          "That's helpful information.",
-          "I understand, thank you.",
-        ]
+      setMessages((prev) => [...prev, ackMessage]);
 
-        const randomAck = acknowledgments[Math.floor(Math.random() * acknowledgments.length)]
-
-        const ackMessage: ConversationMessage = {
-          id: uuidv4(),
-          sender: "ai",
-          message: randomAck,
-          timestamp: new Date(),
+      speakText(ackMessage.message, () => {
+        const nextQuestionIndex = currentQuestionIndex + 1;
+        if (nextQuestionIndex < config.questions.length) {
+          setUserHasResponded(false);
+          setWaitingForUserResponse(false);
+          setTimeout(() => askQuestion(nextQuestionIndex), 500);
+        } else {
+          endAssessment("completed");
         }
-
-        setMessages((prev) => [...prev, ackMessage])
-
-        speakText(randomAck, () => {
-          // Automatically move to next question after acknowledgment
-          setTimeout(() => {
-            const nextQuestionIndex = currentQuestionIndex + 1
-            setCurrentQuestionIndex(nextQuestionIndex)
-            setUserHasResponded(false)
-            setWaitingForUserResponse(false)
-
-            if (nextQuestionIndex < config.questions.length) {
-              askQuestion(nextQuestionIndex)
-            } else {
-              endAssessment("completed")
-            }
-          }, 1500)
-        })
-      },
-      1500 + Math.random() * 1000,
-    )
-  }
+      });
+    }, 1500);
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleSendMessage(inputMessage)
+      e.preventDefault();
+      handleSendMessage(inputMessage);
     }
-  }
+  };
 
   const handleSecurityAlert = (alert: any) => {
-    if (isAssessmentTerminated) return
+    if (isAssessmentTerminated) return;
 
-    setSecurityAlerts((prev) => [...prev, alert])
+    setSecurityAlerts((prev) => [...prev, alert]);
 
     if (alert.severity === "high" || securityAlerts.length >= config.maxViolations) {
-      endAssessment("violation")
+      endAssessment("violation");
     }
-  }
+  };
 
   const handleFaceDetectionUpdate = (data: FaceDetectionData) => {
-    setFaceDetectionData(data)
-  }
+    setFaceDetectionData(data);
+  };
 
   const handleFaceAwayViolation = useCallback(() => {
-    if (isAssessmentTerminated) return
+    if (isAssessmentTerminated) return;
 
-    console.log("Face away violation detected - terminating assessment")
+    console.log("Face away violation detected - terminating assessment");
 
     const faceAwayAlert = {
       id: Date.now().toString(),
@@ -486,44 +498,43 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
       message: "Face not detected for extended period",
       timestamp: new Date(),
       severity: "high",
-    }
+    };
 
-    setSecurityAlerts((prev) => [...prev, faceAwayAlert])
-    endAssessment("violation")
-  }, [isAssessmentTerminated])
+    setSecurityAlerts((prev) => [...prev, faceAwayAlert]);
+    endAssessment("violation");
+  }, [isAssessmentTerminated]);
 
   const endAssessment = (reason: "completed" | "violation" | "timeout") => {
-    if (isAssessmentTerminated) return
+    if (isAssessmentTerminated) return;
 
-    console.log("Ending assessment with reason:", reason)
+    console.log("Ending assessment with reason:", reason);
 
-    setIsAssessmentTerminated(true)
-    setTerminationReason(reason)
-    setTimerActive(false)
+    setIsAssessmentTerminated(true);
+    setTerminationReason(reason);
+    setTimerActive(false);
 
     // Stop recording if active
     if (isRecording) {
-      stopRecording()
+      stopRecording();
     }
 
     // Stop any ongoing speech
     if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel()
+      window.speechSynthesis.cancel();
     }
 
     // Stop media streams
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop())
+      streamRef.current.getTracks().forEach((track) => track.stop());
     }
 
     // Calculate score based on questions answered
-    const questionsAnswered =
-      reason === "completed" ? config.questions.length : currentQuestionIndex + (userHasResponded ? 1 : 0)
-    const scorePercentage = Math.round((questionsAnswered / config.questions.length) * 100)
-    const passed = scorePercentage >= 60 // 60% passing threshold
+    const finalQuestionsAnswered = reason === "completed" ? config.questions.length : questionsAnswered;
+    const scorePercentage = Math.round((finalQuestionsAnswered / config.questions.length) * 100);
+    const passed = scorePercentage >= 60; // 60% passing threshold
 
     const assessmentResult = {
-      questionsAnswered,
+      questionsAnswered: finalQuestionsAnswered,
       totalQuestions: config.questions.length,
       duration: Math.floor((Date.now() - assessmentStartTime) / 1000 / 60),
       securityAlertsCount: securityAlerts.length,
@@ -539,30 +550,26 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
       score: scorePercentage,
       passed: reason === "completed" ? true : passed,
       timeRemaining: reason === "timeout" ? 0 : timeRemaining,
-    }
+    };
 
     // Show termination loader
-    setShowTerminationLoader(true)
+    setShowTerminationLoader(true);
 
     // Different completion messages based on reason
-    let completionMessage = ""
-    let loaderMessage = ""
+    let completionMessage = "";
 
     switch (reason) {
       case "completed":
         completionMessage =
-          "Congratulations! You have successfully completed the assessment. Your responses have been recorded and will be analyzed."
-        loaderMessage = "Assessment Completed Successfully"
-        break
+          "Congratulations! You have successfully completed the assessment. Your responses have been recorded and will be analyzed.";
+        break;
       case "violation":
         completionMessage =
-          "The assessment has been terminated due to security violations. You looked away from the camera for too long."
-        loaderMessage = "Assessment Terminated - Security Violation"
-        break
+          "The assessment has been terminated due to security violations. You looked away from the camera for too long.";
+        break;
       case "timeout":
-        completionMessage = `Time's up! The assessment has been terminated due to time limit exceeded. You answered ${questionsAnswered} out of ${config.questions.length} questions.`
-        loaderMessage = "Assessment Terminated - Time Limit Exceeded"
-        break
+        completionMessage = `Time's up! The assessment has been terminated due to time limit exceeded. You answered ${finalQuestionsAnswered} out of ${config.questions.length} questions.`;
+        break;
     }
 
     const finalMessage: ConversationMessage = {
@@ -570,22 +577,22 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
       sender: "ai",
       message: completionMessage,
       timestamp: new Date(),
-    }
+    };
 
-    setMessages((prev) => [...prev, finalMessage])
+    setMessages((prev) => [...prev, finalMessage]);
 
     // Speak completion message and then proceed to results
     speakText(completionMessage, () => {
       // Show loader for 3 seconds, then proceed to results
       setTimeout(() => {
-        setShowTerminationLoader(false)
-        onAssessmentComplete(assessmentResult)
+        setShowTerminationLoader(false);
+        onAssessmentComplete(assessmentResult);
         if (onTerminate) {
-          onTerminate()
+          onTerminate();
         }
-      }, 3000)
-    })
-  }
+      }, 3000);
+    });
+  };
 
   // Show termination loader
   if (showTerminationLoader) {
@@ -599,7 +606,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
             headerColor: "from-green-600 to-green-700",
             iconColor: "text-green-600",
             icon: "✓",
-          }
+          };
         case "violation":
           return {
             title: "Assessment Terminated",
@@ -608,7 +615,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
             headerColor: "from-red-600 to-red-700",
             iconColor: "text-red-600",
             icon: "⚠",
-          }
+          };
         case "timeout":
           return {
             title: "Time Limit Exceeded",
@@ -617,7 +624,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
             headerColor: "from-orange-600 to-orange-700",
             iconColor: "text-orange-600",
             icon: "⏰",
-          }
+          };
         default:
           return {
             title: "Processing",
@@ -626,11 +633,11 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
             headerColor: "from-blue-600 to-blue-700",
             iconColor: "text-blue-600",
             icon: "⏳",
-          }
+          };
       }
-    }
+    };
 
-    const loaderContent = getLoaderContent()
+    const loaderContent = getLoaderContent();
 
     return (
       <div
@@ -654,7 +661,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -767,9 +774,9 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                           <button
                             onClick={() => {
                               if (message.audioBlob) {
-                                const audioUrl = URL.createObjectURL(message.audioBlob)
-                                const audio = new Audio(audioUrl)
-                                audio.play()
+                                const audioUrl = URL.createObjectURL(message.audioBlob);
+                                const audio = new Audio(audioUrl);
+                                audio.play();
                               }
                             }}
                             className={`flex items-center space-x-1 text-xs ${
@@ -935,9 +942,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                     ></div>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>
-                      Questions Answered: {userHasResponded ? currentQuestionIndex + 1 : currentQuestionIndex}
-                    </span>
+                    <span>Questions Answered: {questionsAnswered}</span>
                     <span>{Math.round(((currentQuestionIndex + 1) / config.questions.length) * 100)}%</span>
                   </div>
                 </div>
@@ -962,7 +967,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                 <p>• Or type your response in the text box</p>
                 <p>• Keep your face visible to the camera</p>
                 <p>• Questions advance automatically after your response</p>
-                <p>• Complete all questions within 15 minutes</p>
+                <p>• Complete all questions within 10 minutes</p>
               </CardContent>
             </Card>
 
@@ -1027,5 +1032,5 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
