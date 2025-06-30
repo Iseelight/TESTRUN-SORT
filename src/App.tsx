@@ -47,33 +47,35 @@ function HomePage() {
       <Header />
 
       {/* Hero Section */}
-      <div className="min-h-[calc(100vh-4rem)] flex flex-col">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-grow flex flex-col justify-center">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-              Revolutionize Your{' '}
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Hiring Process
-              </span>
-            </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8">
-              Move beyond keyword-based ATS systems. Our AI conducts intelligent conversations with candidates to discover true talent, with advanced proctoring to ensure interview integrity.
-            </p>
-            <div className="flex justify-center gap-4 mb-12">
-              <Button size="lg" onClick={() => setMode('recruiter')}>
-                <Users className="mr-2 h-5 w-5" />
-                I'm a Recruiter
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => setMode('candidate')}>
-                <Briefcase className="mr-2 h-5 w-5" />
-                I'm Looking for Jobs
-              </Button>
+      <div className="min-h-[100vh] flex flex-col">
+        <div className="flex-grow flex items-center justify-center">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="text-center mb-20">
+              <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-6">
+                Revolutionize Your{' '}
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Hiring Process
+                </span>
+              </h1>
+              <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8">
+                Move beyond keyword-based ATS systems. Our AI conducts intelligent conversations with candidates to discover true talent, with advanced proctoring to ensure interview integrity.
+              </p>
+              <div className="flex justify-center gap-4 mb-12">
+                <Button size="lg" onClick={() => setMode('recruiter')}>
+                  <Users className="mr-2 h-5 w-5" />
+                  I'm a Recruiter
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => setMode('candidate')}>
+                  <Briefcase className="mr-2 h-5 w-5" />
+                  I'm Looking for Jobs
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Features Grid */}
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-4">

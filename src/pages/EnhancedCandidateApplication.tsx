@@ -280,9 +280,6 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
          communicationScore * job.skill_weights.communication) / 100
       );
       
-      // Determine initial status based on score, job settings, and termination reason
-      let initialStatus = 'pending';
-      
       // Check if assessment was terminated
       const wasTerminated = !!assessmentResult.terminationReason;
       
@@ -298,6 +295,8 @@ export function EnhancedCandidateApplication({ onBack, directJobId }: EnhancedCa
       }
       
       // Determine status based on score and termination reason
+      let initialStatus = 'pending';
+      
       if (assessmentResult.terminationReason === "Session terminated due to security violations") {
         initialStatus = 'rejected';
       } else if (overallScore < job.cutoff_percentage) {

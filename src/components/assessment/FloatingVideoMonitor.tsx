@@ -7,13 +7,17 @@ interface FloatingVideoMonitorProps {
   onFaceDetectionUpdate: (data: FaceDetectionData) => void;
   isActive: boolean;
   onFaceAwayViolation: () => void;
+  hideTerminationModal?: boolean;
+  className?: string;
 }
 
 export function FloatingVideoMonitor({ 
   onSecurityAlert, 
   onFaceDetectionUpdate, 
   isActive, 
-  onFaceAwayViolation 
+  onFaceAwayViolation,
+  hideTerminationModal = false,
+  className = ''
 }: FloatingVideoMonitorProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -342,7 +346,7 @@ export function FloatingVideoMonitor({
             newCount >= 2 ? 'high' : 'medium'
           );
           
-          if (newCount >= 2) {
+          if (newCount >= 2 && !hideTerminationModal) {
             onFaceAwayViolation();
             return; // Exit early as assessment is terminated
           }
@@ -363,7 +367,7 @@ export function FloatingVideoMonitor({
     } catch (error) {
       console.error('Face detection error:', error);
     }
-  }, [isVideoEnabled, onFaceDetectionUpdate, generateSecurityAlert, lastFaceDetectionTime, faceAwayCount, onFaceAwayViolation, playAlertTone, ensureVideoPlaying, isCurrentlyAway, awayStartTime]);
+  }, [isVideoEnabled, onFaceDetectionUpdate, generateSecurityAlert, lastFaceDetectionTime, faceAwayCount, onFaceAwayViolation, playAlertTone, ensureVideoPlaying, isCurrentlyAway, awayStartTime, hideTerminationModal]);
 
   // Handle visibility change and ensure video continues playing
   useEffect(() => {
@@ -451,6 +455,7 @@ export function FloatingVideoMonitor({
     <div className={`
       fixed top-4 right-4 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300
       ${isMinimized ? 'w-16 h-16' : 'w-64 h-48'}
+      ${className}
     `}>
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-2 py-1 flex items-center justify-between text-xs z-10">
